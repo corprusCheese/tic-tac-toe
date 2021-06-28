@@ -7,4 +7,4 @@ target/*
 .bsp
 project
 target
-
+.DS_Store
