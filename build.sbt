@@ -11,6 +11,8 @@ val circeVersion = "0.14.1"
 val scalaTestVersion = "3.0.8"
 val catsEffectVersion = "2.5.1"
 val catsCoreVersion = "2.3.0"
+val newTypeVersion = "0.4.4"
+val logBackVersion = "1.1.3"
 
 libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-dsl" % http4sVersion,
@@ -22,8 +24,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
   "org.typelevel" %% "cats-effect" % catsEffectVersion,
   "org.typelevel" %% "cats-core" % catsCoreVersion,
-
+  "io.estatico" %% "newtype" % newTypeVersion,
+  "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime
 )
 
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3" % Runtime
 

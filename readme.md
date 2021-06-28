@@ -1,4 +1,4 @@
-<h1>Tic-tak-toe</h1>
+<h1>Tic-tac-toe</h1>
 
 запускать sbt run
 
@@ -10,6 +10,10 @@ GET -> /board -> returns json like
     
     { "turn": ???, "result": ???, "field": ??? }
 
-POST -> /board -> returns json with board (if you send parameters x and y in your post query, if you don't - just returns you a board like nothing happens)
+POST -> /board -> you need to send 
+
+    { "x": int value, "y": int value }
+ 
+then it returns json with changed board 
 
     { "field": ??? }

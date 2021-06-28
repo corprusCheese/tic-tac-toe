@@ -3,15 +3,15 @@ package HttpService
 
 import cats.data.Kleisli
 import cats.effect._
-import io.circe.Json
 import io.circe.literal.JsonStringContext
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Encoder, HCursor, Json, _}
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.io._
-import io.circe._
-import io.circe.syntax.EncoderOps
 import org.http4s.implicits._
 import org.http4s.{HttpRoutes, Request, Response}
-import io.circe.{Decoder, Encoder, HCursor, Json}
+
+import scala.language.implicitConversions
 
 object HttpService {
 
@@ -25,43 +25,49 @@ object HttpService {
   case object Draw extends Result
 
   type Board = List[List[Option[Mark]]]
-  type Dimension = Int
 
   var turn: Mark = Cross
   var board: Board = initBoard()
   var result: Option[Result] = None
-  val count = 3
+  val count: Dimension = 3
 
   case class Position(x: Int, y: Int)
+  case class Dimension(v: Int)
 
-  /*implicit val isPositive: Dimension = Int {
-    def apply(): Int = {
-      if (this>0) a else 1
-    }
-  }*/
+  implicit def dimension2int(dim: Dimension): Int = dim.v
+  implicit def int2dimension(v: Int): Dimension = Dimension(if (v < 1) 1 else v)
 
-  implicit val encodeRequest: Encoder[Position] = new Encoder[Position] {
-    final def apply(a: Position): Json = Json.obj(
-      ("x", Json.fromInt(a.x)),
-      ("y", Json.fromInt(a.y))
-    )
-  }
+  implicit val encodeRequest: Encoder[Position] = (a: Position) => Json.obj(
+    ("x", Json.fromInt(a.x)),
+    ("y", Json.fromInt(a.y))
+  )
 
-  implicit val decodeRequest: Decoder[Position] = new Decoder[Position] {
-    final def apply(c: HCursor): Decoder.Result[Position] = {
-      for {
-        x <- c.downField("x").as[Int]
-        y <- c.downField("y").as[Int]
-      } yield {
-        Position(x, y)
-      }
+  implicit val decodeRequest: Decoder[Position] = (c: HCursor) => {
+    for {
+      x <- c.downField("x").as[Int]
+      y <- c.downField("y").as[Int]
+    } yield {
+      Position(x, y)
     }
   }
 
-  implicit val encodeMark: Encoder[Mark] = new Encoder[Mark] {
-    final def apply(a: Mark): Json = Json.obj(
-      ("mark", getResponseFromMark(Option(a)).asJson)
-    )
+  implicit val encodeMark: Encoder[Mark] = (a: Mark) => Json.obj(
+    ("mark", getResponseFromMark(Option(a)).asJson)
+  )
+
+  def initBoard() : Board = List(
+    List(None, None, None),
+    List(None, None, None),
+    List(None, None, None)
+  )
+
+  def initBoardOfDim(dim: Dimension): Board = {
+    var board: Board = List();
+    for (_ <-0 until dim) {
+      board = board :+ List.fill(dim)(None)
+    }
+
+    board
   }
 
   def getMarkFromRequest(str: String): Mark = {
@@ -98,6 +104,9 @@ object HttpService {
   def isRowHaveOneMark(list: List[Option[Mark]]): Boolean =
     list.distinct.size == 1 && list.head.isDefined
 
+  def isFull(board: Board): Boolean =
+    !board.flatten.contains(None)
+
   def isSomeoneWin(board: Board): Boolean = {
     val boardT: Board = board.transpose
     var result = false;
@@ -116,18 +125,6 @@ object HttpService {
     result
   }
 
-  def initBoard() : Board = List(
-    List(None, None, None),
-    List(None, None, None),
-    List(None, None, None)
-  )
-
-  def initBoardOfDim(dim: Int): Board = {
-
-
-
-  }
-
   def getBoardToString(board: Board): String = {
     board.map(x => x.map(y => getResponseFromMark(y))).transpose.toString()
   }
@@ -138,9 +135,6 @@ object HttpService {
       case Some(value) => board
     }
   }
-
-  def isFull(board: Board): Boolean =
-    !board.flatten.contains(None)
 
   def getResultFromBoard(board: Board, turn: Mark): Option[Result] = {
     val winning: Boolean = isSomeoneWin(board)

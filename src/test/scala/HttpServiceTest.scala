@@ -15,6 +15,12 @@ class HttpServiceTest extends FlatSpec {
     ))
   }
 
+  it should("create a new empty board of some size(initBoardOfDim)") in {
+    assert(initBoardOfDim(3) == initBoard())
+    assert(initBoardOfDim(1) == List(List(None)))
+    assert(initBoardOfDim(-4) == List(List(None)))
+  }
+
   it should("notice winning line if it has only elems of one type but not None(isRowHaveOneMark)") in {
     val list1: List[Option[Mark]] = List(None, None, None)
     val list2: List[Option[Mark]] = List(None, Some(Circle), None)

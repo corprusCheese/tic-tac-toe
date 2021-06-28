@@ -1,10 +1,5 @@
-.idea/*
-.bsp/*
-project/*
-target/*
-
 .idea
 .bsp
-project
+project/project
+project/target
 target
-.DS_Store
