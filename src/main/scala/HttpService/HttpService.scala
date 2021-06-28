@@ -141,8 +141,8 @@ object HttpService {
 
     if (winning) {
       turn match {
-        case Cross => Some(CircleWins)
-        case Circle => Some(CrossWins)
+        case Cross => Some(CrossWins)
+        case Circle => Some(CircleWins)
       }
     } else {
       if (isFull(board)) Some(Draw) else None

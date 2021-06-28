@@ -17,3 +17,7 @@ POST -> /board -> you need to send
 then it returns json with changed board 
 
     { "field": ??? }
+
+for example:
+
+    curl --request POST http://127.0.0.1:8080/board --data '{"x": 0, "y": 0}' 
