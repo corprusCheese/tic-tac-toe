@@ -79,8 +79,8 @@ object HttpService {
 
   def getResponseFromMark(mark: Option[Mark]): String = {
     mark match {
-      case Some(Circle) => "x"
-      case Some(Cross) => "o"
+      case Some(Circle) => "o"
+      case Some(Cross) => "x"
       case _ => "none"
     }
   }
@@ -141,8 +141,8 @@ object HttpService {
 
     if (winning) {
       turn match {
-        case Cross => Some(CrossWins)
-        case Circle => Some(CircleWins)
+        case Cross => Some(CircleWins)
+        case Circle => Some(CrossWins)
       }
     } else {
       if (isFull(board)) Some(Draw) else None
@@ -162,6 +162,12 @@ object HttpService {
       val json = json"""{"turn": $stringTurn, "result": $stringResult, "field": $stringBoard}"""
 
       Ok(json)
+    case GET -> Root / "board" / "clear" =>
+      turn = Cross
+      board = initBoard()
+      result = None
+
+      Ok("board cleared!")
     case req@POST -> Root / "board" =>
       req.as[Json].flatMap(json => {
         val maybePosition: Either[DecodingFailure, Position] = for {ans <- json.as[Position]} yield ans
@@ -177,8 +183,7 @@ object HttpService {
             val jsonText = json"""{"field": $stringBoard}"""
 
             Ok(jsonText)
-          case Left(x) =>
-            Ok(x.toString())
+          case Left(x) => Ok(x.toString())
         }
       })
 

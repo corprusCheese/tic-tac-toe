@@ -73,7 +73,7 @@ class HttpServiceTest extends FlatSpec {
 
     assert(getResultFromBoard(board1, Cross).isEmpty)
     assert(getResultFromBoard(board2, Circle).isEmpty)
-    assert(getResultFromBoard(board3, Circle).contains(CircleWins))
-    assert(getResultFromBoard(board3, Cross).contains(CrossWins))
+    assert(getResultFromBoard(board3, Circle).contains(CrossWins))
+    assert(getResultFromBoard(board3, Cross).contains(CircleWins))
   }
 }
