@@ -125,8 +125,9 @@ object HttpService {
     result
   }
 
-  def getBoardToString(board: Board): String = {
-    board.map(x => x.map(y => getResponseFromMark(y))).transpose.toString()
+  def getBoardAsMap(board: Board): Map[Int, Map[Int, String]] = {
+    board.map(x => x.map(y => getResponseFromMark(y))).transpose
+      .map(x=>x.zipWithIndex.map{ case (v,i) => (i,v) }.toMap).zipWithIndex.map{ case (v,i) => (i,v) }.toMap
   }
 
   def postMarkToBoard(board: Board, x: Int, y: Int, mark: Mark): Board = {
@@ -149,25 +150,36 @@ object HttpService {
     }
   }
 
+  def getJsonAsResponse(board: Board, turn: Mark, result: Option[Result]): Json = {
+    Json.obj(
+      "turn" -> getResponseFromMark(Option(turn)).asJson,
+      "result" -> getResultToString(result).asJson,
+      "board" -> getBoardAsMap(board).asJson
+    )
+  }
+
+  def getJsonBoardOnlyAsResponse(board: Board): Json = {
+    Json.obj(
+      "board" ->getBoardAsMap(board).asJson
+    )
+  }
+
+  def clearState(): Unit = {
+    turn = Cross
+    board = initBoard()
+    result = None
+  }
+
   val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
     case GET -> Root / "board" =>
-      if (result.isEmpty) {
+      if (result.isEmpty)
         result = getResultFromBoard(board, turn)
-      }
 
-      val stringBoard: String = getBoardToString(board)
-      val stringTurn: String = getResponseFromMark(Option(turn))
-      val stringResult: String = getResultToString(result)
-
-      val json = json"""{"turn": $stringTurn, "result": $stringResult, "field": $stringBoard}"""
-
-      Ok(json)
+      Ok(getJsonAsResponse(board, turn, result))
     case GET -> Root / "board" / "clear" =>
-      turn = Cross
-      board = initBoard()
-      result = None
+      clearState()
 
-      Ok("board cleared!")
+      Ok(getJsonAsResponse(board, turn, result))
     case req@POST -> Root / "board" =>
       req.as[Json].flatMap(json => {
         val maybePosition: Either[DecodingFailure, Position] = for {ans <- json.as[Position]} yield ans
@@ -179,10 +191,7 @@ object HttpService {
               turn = getNextTurn(turn)
             }
 
-            val stringBoard: String = getBoardToString(board)
-            val jsonText = json"""{"field": $stringBoard}"""
-
-            Ok(jsonText)
+            Ok(getJsonBoardOnlyAsResponse(board))
           case Left(x) => Ok(x.toString())
         }
       })
