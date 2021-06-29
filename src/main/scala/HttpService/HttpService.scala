@@ -3,14 +3,15 @@ package HttpService
 
 import cats.data.Kleisli
 import cats.effect._
-import io.circe.literal.JsonStringContext
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json, _}
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.io._
 import org.http4s.implicits._
-import org.http4s.{HttpRoutes, Request, Response}
+import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
+import java.util.concurrent.{ExecutorService, Executors}
+import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
 object HttpService {
@@ -33,6 +34,8 @@ object HttpService {
 
   case class Position(x: Int, y: Int)
   case class Dimension(v: Int)
+
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   implicit def dimension2int(dim: Dimension): Int = dim.v
   implicit def int2dimension(v: Int): Dimension = Dimension(if (v < 1) 1 else v)
@@ -107,6 +110,7 @@ object HttpService {
   def isFull(board: Board): Boolean =
     !board.flatten.contains(None)
 
+  // todo: rewrite it in functional style
   def isSomeoneWin(board: Board): Boolean = {
     val boardT: Board = board.transpose
     var result = false;
@@ -170,17 +174,27 @@ object HttpService {
     result = None
   }
 
+  val blockingPool: ExecutorService = Executors.newFixedThreadPool(4)
+  val blocker: Blocker = Blocker.liftExecutorService(blockingPool)
+
   val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
+    // todo: fix this
+    case req @ GET -> Root =>
+      StaticFile.fromResource(s"/frontend/index.html", blocker, Some(req)).getOrElseF(NotFound())
+    case req @ GET -> Root / "js" /"index.js" =>
+      StaticFile.fromResource(s"/frontend/js/index.js", blocker, Some(req)).getOrElseF(NotFound())
+    case req @ GET -> Root / "css"/ "styles.css" =>
+      StaticFile.fromResource(s"/frontend/css/styles.css", blocker, Some(req)).getOrElseF(NotFound())
+    // routes
     case GET -> Root / "board" =>
       if (result.isEmpty)
         result = getResultFromBoard(board, turn)
-
       Ok(getJsonAsResponse(board, turn, result))
     case GET -> Root / "board" / "clear" =>
       clearState()
-
       Ok(getJsonAsResponse(board, turn, result))
     case req@POST -> Root / "board" =>
+      // todo: rewrite it by more simple way
       req.as[Json].flatMap(json => {
         val maybePosition: Either[DecodingFailure, Position] = for {ans <- json.as[Position]} yield ans
 
