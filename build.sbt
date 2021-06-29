@@ -28,4 +28,4 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime
 )
 
-enablePlugins(JavaServerAppPackaging)
+enablePlugins(JavaAppPackaging)
