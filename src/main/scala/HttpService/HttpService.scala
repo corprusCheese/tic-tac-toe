@@ -180,11 +180,13 @@ object HttpService {
   val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
     // todo: fix this
     case req @ GET -> Root =>
-      StaticFile.fromResource(s"/frontend/index.html", blocker, Some(req)).getOrElseF(NotFound())
-    case req @ GET -> Root / "js" /"index.js" =>
-      StaticFile.fromResource(s"/frontend/js/index.js", blocker, Some(req)).getOrElseF(NotFound())
-    case req @ GET -> Root / "css"/ "styles.css" =>
-      StaticFile.fromResource(s"/frontend/css/styles.css", blocker, Some(req)).getOrElseF(NotFound())
+      StaticFile.fromResource(s"/front/public/index.html", blocker, Some(req)).getOrElseF(NotFound())
+    case req @ GET -> Root / "build" /"bundle.js" =>
+      StaticFile.fromResource(s"/front/public/build/bundle.js", blocker, Some(req)).getOrElseF(NotFound())
+    case req @ GET -> Root / "build"/ "bundle.css" =>
+      StaticFile.fromResource(s"/front/public/css/bundle.css", blocker, Some(req)).getOrElseF(NotFound())
+    case req @ GET -> Root / "global.css" =>
+      StaticFile.fromResource(s"/front/public/global.css", blocker, Some(req)).getOrElseF(NotFound())
     // routes
     case GET -> Root / "board" =>
       if (result.isEmpty)
