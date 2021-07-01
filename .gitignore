@@ -6,3 +6,4 @@ target
 target/
 project/boot
 node_modules
+package-lock.json
