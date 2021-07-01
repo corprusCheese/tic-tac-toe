@@ -5,3 +5,4 @@ project/target
 target
 target/
 project/boot
+node_modules
