@@ -8,6 +8,7 @@ import io.circe.{Decoder, Encoder, HCursor, Json, _}
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.io._
 import org.http4s.implicits._
+import org.http4s.server.staticcontent.{FileService, fileService}
 import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
 import java.util.concurrent.{ExecutorService, Executors}
@@ -177,17 +178,21 @@ object HttpService {
   val blockingPool: ExecutorService = Executors.newFixedThreadPool(4)
   val blocker: Blocker = Blocker.liftExecutorService(blockingPool)
 
+  def static(file: String, blocker: Blocker, request: Request[IO]): IO[Response[IO]] = {
+    StaticFile.fromResource("/front/public/" + file, blocker, Some(request)).getOrElseF(NotFound())
+  }
+
+  def staticBuild(file: String, blocker: Blocker, request: Request[IO]): IO[Response[IO]] = {
+    StaticFile.fromResource("/front/public/build/" + file, blocker, Some(request)).getOrElseF(NotFound())
+  }
+
   val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
-    // todo: fix this
+    case req @ GET -> Root / path if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
+      static(path, blocker, req)
+    case req @ GET -> Root / "build" / path if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
+      staticBuild(path, blocker, req)
     case req @ GET -> Root =>
       StaticFile.fromResource(s"/front/public/index.html", blocker, Some(req)).getOrElseF(NotFound())
-    case req @ GET -> Root / "build" /"bundle.js" =>
-      StaticFile.fromResource(s"/front/public/build/bundle.js", blocker, Some(req)).getOrElseF(NotFound())
-    case req @ GET -> Root / "build"/ "bundle.css" =>
-      StaticFile.fromResource(s"/front/public/css/bundle.css", blocker, Some(req)).getOrElseF(NotFound())
-    case req @ GET -> Root / "global.css" =>
-      StaticFile.fromResource(s"/front/public/global.css", blocker, Some(req)).getOrElseF(NotFound())
-    // routes
     case GET -> Root / "board" =>
       if (result.isEmpty)
         result = getResultFromBoard(board, turn)
@@ -195,7 +200,7 @@ object HttpService {
     case GET -> Root / "board" / "clear" =>
       clearState()
       Ok(getJsonAsResponse(board, turn, result))
-    case req@POST -> Root / "board" =>
+    case req @POST -> Root / "board" =>
       // todo: rewrite it by more simple way
       req.as[Json].flatMap(json => {
         val maybePosition: Either[DecodingFailure, Position] = for {ans <- json.as[Position]} yield ans

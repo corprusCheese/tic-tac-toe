@@ -5,7 +5,8 @@
     "heroku-postbuild": "cd src/main/resources/front && npm install && npm run build",
     "frontend": "cd src/main/resources/front && npm start",
     "backend": "sbt run",
-    "all": "sbt run && cd src/main/resources/front && npm run build"
+    "all": "sbt run && cd src/main/resources/front && npm run build",
+    "watch": "sbt run && cd src/main/resources/front && npm start"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
