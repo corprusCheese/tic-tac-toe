@@ -1,14 +1,49 @@
 <script>
 	import axios from "axios";
 
-	axios.get('/board').then(res => {
-		res = res.data
-		res['board'].forEach(item => {
-			console.log(item)
+	function getBoard(board) {
+		let html = ""
+		board.forEach((row, i) => {
+			row = new Map(Object.entries(row))
+			let rowWrap = ""
+			row.forEach((item, j) => {
+				rowWrap += getItem(item, i, j)
+			})
+			html += rowWrapper(rowWrap)
 		})
+		return html
+	}
+
+	function getItem(item, rowIndex, index) {
+		let mark = ""
+		switch (item) {
+			case "cross":
+				mark = "x"
+				break
+			case "circle":
+				mark = "o"
+				break
+		}
+
+		return cellWrapper(mark, rowIndex, index)
+	}
+
+	function cellWrapper(html, rowIndex, index) {
+		return "<div class='ceil' data-i='"+rowIndex+"' data-j='"+index+"'>"+html+"</div>"
+	}
+
+	function rowWrapper(html) {
+		return "<div class='row-wrapper'>"+html+"</div>"
+	}
+
+	let htmlBoard = ""
+	axios.get('/board').then(res => {
+		let board = new Map(Object.entries(res.data.board))
+		htmlBoard = getBoard(board)
 	})
+
 </script>
 
 <main>
-	<div class="board"></div>
+	<div class="board">{@html htmlBoard}</div>
 </main>

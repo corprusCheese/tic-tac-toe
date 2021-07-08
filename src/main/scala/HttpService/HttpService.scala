@@ -138,7 +138,7 @@ object HttpService {
   def postMarkToBoard(board: Board, x: Int, y: Int, mark: Mark): Board = {
     board(x)(y) match {
       case None => board.updated(x, board(x).updated(y, Option(mark)))
-      case Some(value) => board
+      case Some(_) => board
     }
   }
 
@@ -187,11 +187,15 @@ object HttpService {
   }
 
   val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
-    case req @ GET -> Root / path if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
+    case req@GET -> Root / path
+      if List(".js", ".css", ".less", ".map", ".html", ".webm").exists(path.endsWith) =>
       static(path, blocker, req)
-    case req @ GET -> Root / "build" / path if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
+    case req@GET -> Root / "global.less" =>
+      StaticFile.fromResource("/front/public/build/global.less", blocker, Some(req)).getOrElseF(NotFound())
+    case req@GET -> Root / "build" / path
+      if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
       staticBuild(path, blocker, req)
-    case req @ GET -> Root =>
+    case req@GET -> Root =>
       StaticFile.fromResource(s"/front/public/index.html", blocker, Some(req)).getOrElseF(NotFound())
     case GET -> Root / "board" =>
       if (result.isEmpty)
@@ -200,22 +204,17 @@ object HttpService {
     case GET -> Root / "board" / "clear" =>
       clearState()
       Ok(getJsonAsResponse(board, turn, result))
-    case req @POST -> Root / "board" =>
-      // todo: rewrite it by more simple way
+    case req@POST -> Root / "board" =>
       req.as[Json].flatMap(json => {
-        val maybePosition: Either[DecodingFailure, Position] = for {ans <- json.as[Position]} yield ans
-
-        maybePosition match {
+        (for {ans <- json.as[Position]} yield ans) match {
           case Right(position: Position) =>
             if (board(position.x)(position.y).isEmpty) {
               board = postMarkToBoard(board, position.x, position.y, turn)
               turn = getNextTurn(turn)
             }
-
             Ok(getJsonBoardOnlyAsResponse(board))
           case Left(x) => Ok(x.toString())
         }
       })
-
   }.orNotFound
 }
