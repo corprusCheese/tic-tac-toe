@@ -190,8 +190,8 @@ object HttpService {
     case req@GET -> Root / path
       if List(".js", ".css", ".less", ".map", ".html", ".webm").exists(path.endsWith) =>
       static(path, blocker, req)
-    case req@GET -> Root / "global.less" =>
-      StaticFile.fromResource("/front/public/build/global.less", blocker, Some(req)).getOrElseF(NotFound())
+    case req@GET -> Root / "global.css" =>
+      StaticFile.fromResource("/front/public/build/global.css", blocker, Some(req)).getOrElseF(NotFound())
     case req@GET -> Root / "build" / path
       if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
       staticBuild(path, blocker, req)

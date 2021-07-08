@@ -45,5 +45,7 @@
 </script>
 
 <main>
-	<div class="board">{@html htmlBoard}</div>
+	<div class="wrapper">
+		<div class="board">{@html htmlBoard}</div>
+	</div>
 </main>
