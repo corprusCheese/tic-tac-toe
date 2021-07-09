@@ -19,12 +19,12 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     getPropertiesForServer.flatMap(props =>
       BlazeServerBuilder[IO]
-      .bindHttp(props._1, props._2)
-      .withHttpApp(HttpService.gameService)
-      .serve
-      .compile
-      .drain
-      .as(ExitCode.Success)
+        .bindHttp(props._1, props._2)
+        .withHttpApp(HttpService.api)
+        .serve
+        .compile
+        .drain
+        .as(ExitCode.Success)
     )
   }
 }

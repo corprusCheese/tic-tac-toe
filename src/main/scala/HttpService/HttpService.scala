@@ -3,19 +3,27 @@ package HttpService
 
 import cats.data.Kleisli
 import cats.effect._
+import cats.implicits._
+import fs2.concurrent.Queue
+import fs2.{Pipe, Stream}
+import io.circe._
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder, HCursor, Json, _}
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
-import org.http4s.dsl.io._
+import org.http4s.dsl.Http4sDsl
 import org.http4s.implicits._
-import org.http4s.server.staticcontent.{FileService, fileService}
+import org.http4s.server.Router
+import org.http4s.server.websocket.WebSocketBuilder
+import org.http4s.websocket.WebSocketFrame
+import org.http4s.websocket.WebSocketFrame.Text
 import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 import scala.language.implicitConversions
 
-object HttpService {
+
+object HttpService extends Http4sDsl[IO]{
 
   sealed trait Mark
   case object Circle extends Mark
@@ -37,6 +45,7 @@ object HttpService {
   case class Dimension(v: Int)
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
 
   implicit def dimension2int(dim: Dimension): Int = dim.v
   implicit def int2dimension(v: Int): Dimension = Dimension(if (v < 1) 1 else v)
@@ -186,17 +195,20 @@ object HttpService {
     StaticFile.fromResource("/front/public/build/" + file, blocker, Some(request)).getOrElseF(NotFound())
   }
 
-  val gameService: Kleisli[IO, Request[IO], Response[IO]] = HttpRoutes.of[IO] {
-    case req@GET -> Root / path
-      if List(".js", ".css", ".less", ".map", ".html", ".webm").exists(path.endsWith) =>
-      static(path, blocker, req)
+  val fileService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+      // folders
+    case req@GET -> Root / path if List(".js", ".css", ".html").exists(path.endsWith) => static(path, blocker, req)
+    case req@GET -> Root / "build" / path if List(".js", ".css").exists(path.endsWith) =>  staticBuild(path, blocker, req)
+      // hardcode
     case req@GET -> Root / "global.css" =>
       StaticFile.fromResource("/front/public/build/global.css", blocker, Some(req)).getOrElseF(NotFound())
-    case req@GET -> Root / "build" / path
-      if List(".js", ".css", ".map", ".html", ".webm").exists(path.endsWith) =>
-      staticBuild(path, blocker, req)
     case req@GET -> Root =>
       StaticFile.fromResource(s"/front/public/index.html", blocker, Some(req)).getOrElseF(NotFound())
+  }
+
+  // curl --request POST http://127.0.0.1:8080/board --data '{"x": 0, "y": 1}'
+
+  val gameService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "board" =>
       if (result.isEmpty)
         result = getResultFromBoard(board, turn)
@@ -216,5 +228,99 @@ object HttpService {
           case Left(x) => Ok(x.toString())
         }
       })
-  }.orNotFound
+  }
+
+  val socketService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "begin" =>
+      val toClient: Stream[IO, WebSocketFrame] = Stream.awakeEvery[IO](1.second).map(x => Text(s"x: $x"))
+      val fromClient: Pipe[IO, WebSocketFrame, Unit] = _.evalMap({
+        case Text(json, _) => IO.delay(println(s"$json"))
+      })
+
+
+    WebSocketBuilder[IO].build(toClient, fromClient)
+
+    case GET -> Root / "echo" =>
+      val qio = Queue.unbounded[IO, Option[WebSocketFrame]]
+
+      val buildStreams: Queue[IO, Option[WebSocketFrame]] => (Stream[IO, WebSocketFrame], Pipe[IO, WebSocketFrame, Unit]) = queue => {
+        val fromClient: Pipe[IO, WebSocketFrame, Unit] = in => {
+          in.map(_.some).through(queue.enqueue)
+        }
+
+        val toClient: Stream[IO, WebSocketFrame] ={
+          queue.dequeue.unNoneTerminate
+        }
+
+        (toClient, fromClient)
+      }
+
+      val buildSocket: (Stream[IO, WebSocketFrame], Pipe[IO, WebSocketFrame, Unit]) => IO[Response[IO]] = (to, from) =>
+        WebSocketBuilder[IO].build(to, from)
+
+
+      val x = qio.map(buildStreams)
+      val y = x.flatMap(buildSocket.tupled)
+      y
+
+    case GET -> Root / "start" =>
+      val queue: IO[Queue[IO, Position]] = Queue
+        .unbounded[IO, Position];
+
+      def getStreams(queue: Queue[IO, Position]): (Stream[IO, WebSocketFrame],  Pipe[IO, WebSocketFrame, Unit]) = {
+        def parsePositionMessagePure(message: String): Either[Throwable, Position] = {
+          for {
+            json <- parser.parse(message)
+            position <- json.as[Position]
+          } yield position
+        }
+
+        def processInputMessage(message: WebSocketFrame): IO[Unit] = message match {
+          case Text(str, _) =>
+            IO.fromEither(parsePositionMessagePure(str))
+              .flatMap(position => queue.enqueue1(position))
+        }
+
+        def logic(position: Position): String = {
+          if (board(position.x)(position.y).isEmpty) {
+            board = postMarkToBoard(board, position.x, position.y, turn)
+            turn = getNextTurn(turn)
+          }
+          getJsonBoardOnlyAsResponse(board).toString()
+        }
+
+        def makePipeFromClient(inputStream: Stream[IO, WebSocketFrame]): Stream[IO, Unit] = {
+          inputStream.evalMap(processInputMessage)
+        }
+
+        def makeFramesFromPositions(stream: Stream[IO, Position]): Stream[IO, WebSocketFrame] = {
+          stream.map(position => WebSocketFrame.Text(logic(position)))
+        }
+
+        val fromClient: Pipe[IO, WebSocketFrame, Unit] = makePipeFromClient
+        val toClient: Stream[IO, WebSocketFrame] = makeFramesFromPositions(queue.dequeue)
+
+        (toClient, fromClient)
+      }
+
+      for {
+        q <- queue
+        streams = getStreams(q)
+        build <- WebSocketBuilder[IO].build(streams._1, streams._2)
+      } yield build
+  }
+
+  val api: Kleisli[IO, Request[IO], Response[IO]] = Router(
+    "/" -> fileService,
+    "/" -> socketService
+    //"/" -> gameService
+  ).orNotFound
+
+  implicit class StreamSyntax[F[_], A](val f: Stream[F, A]) {
+    def fromQueueNoneTerminated(q: Queue[F, Option[A]]): Stream[F, A] =
+      q.dequeue.unNoneTerminate
+
+    def enqueueNoneTerminated(q: Queue[F, Option[A]]): Pipe[F, A, Unit] = s =>
+      s.map(_.some).through(q.enqueue)
+  }
 }
