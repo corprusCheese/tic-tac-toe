@@ -1,12 +1,10 @@
 package helloworld
 
-import HttpService.HttpService
+import HttpService.MainService
 
 import cats.effect._
 import cats.implicits.catsSyntaxApplicativeId
 import org.http4s.server.blaze._
-
-import scala.util.{Failure, Success, Try}
 
 
 object Main extends IOApp {
@@ -20,7 +18,7 @@ object Main extends IOApp {
     getPropertiesForServer.flatMap(props =>
       BlazeServerBuilder[IO]
         .bindHttp(props._1, props._2)
-        .withHttpApp(HttpService.api)
+        .withHttpApp(MainService.api)
         .serve
         .compile
         .drain
