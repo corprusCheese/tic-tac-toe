@@ -2,11 +2,7 @@
   "name": "svelte-app",
   "version": "1.0.0",
   "scripts": {
-    "heroku-postbuild": "cd src/main/resources/front && npm install && npm run build",
-    "frontend": "cd src/main/resources/front && npm start",
-    "backend": "sbt run",
-    "all": "sbt run && cd src/main/resources/front && npm run build",
-    "watch": "sbt run && cd src/main/resources/front && npm start"
+    "heroku-postbuild": "cd src/main/resources/front && npm install && npm run build"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",

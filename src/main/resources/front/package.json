@@ -8,6 +8,9 @@
     "start": "sirv public --no-clear",
     "heroku-postbuild": "npm run build"
   },
+  "engines": {
+    "node": "14.x"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
