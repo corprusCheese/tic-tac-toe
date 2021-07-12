@@ -15,14 +15,16 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    getPropertiesForServer.flatMap(props =>
-      BlazeServerBuilder[IO]
-        .bindHttp(props._1, props._2)
-        .withHttpApp(MainService.api)
-        .serve
-        .compile
-        .drain
-        .as(ExitCode.Success)
-    )
+    MainService.api.flatMap(api => {
+      getPropertiesForServer.flatMap(props =>
+        BlazeServerBuilder[IO]
+          .bindHttp(props._1, props._2)
+          .withHttpApp(api)
+          .serve
+          .compile
+          .drain
+          .as(ExitCode.Success)
+      )
+    })
   }
 }
