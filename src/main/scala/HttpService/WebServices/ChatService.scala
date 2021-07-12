@@ -19,12 +19,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 
-object Streams {
-}
-
-class ChatService(queuesList: Ref[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]],
-                  messageQueue: Queue[IO, WebSocketFrame],
-                  consumersList: Ref[IO, List[Queue[IO, WebSocketFrame]]]) extends Http4sDsl[IO] with AbstractService {
+class ChatService(consumersList: Ref[IO, List[Queue[IO, WebSocketFrame]]]) extends Http4sDsl[IO] with AbstractService {
 
   private val chatService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case req@GET -> Root / "start" =>
@@ -38,14 +33,7 @@ class ChatService(queuesList: Ref[IO, mutable.Map[String, Queue[IO, WebSocketFra
               case (name, Some(message)) => (name, message)
             }).evalMap({
               case (name, message) =>
-                for {
-                  consumers <- consumersList.get
-                  _ <- consumers.map(queue => {
-                    queue.enqueue1(Text(s"$name: $message"))
-                  }).sequence
-                } yield ()
-
-              //                consumersList.get.flatMap(_.map(_.enqueue1(Text(s"$name: $message"))).sequence).map(_ => ())
+                consumersList.get.flatMap(_.map(_.enqueue1(Text(s"$name: $message"))).sequence).map(_ => ())
             })
           }
 
@@ -54,42 +42,6 @@ class ChatService(queuesList: Ref[IO, mutable.Map[String, Queue[IO, WebSocketFra
               .evalMap(queue => consumersList.update(queue :: _).map(_ => queue))
               .flatMap(queue => queue.dequeue)
           }
-
-          //            messageQueue.dequeue.evalMap(message => {
-          //              queuesList.get.flatMap(queues => {
-          //                queues.values.map(_.enqueue1(message)).toList.sequence.map(_ => ())
-          //              })
-          //            })
-
-          //          val inStreamProcessor: Pipe[IO, WebSocketFrame, Unit] = stream => {
-          //            var name = ""
-          //
-          //            stream.evalMap({
-          //              case Text(str, _) if name == "" =>
-          //                queuesList.get.flatMap(x => {
-          //                  Queue.unbounded[IO, WebSocketFrame].map(q => {
-          //                    name = str
-          //                    x += (str -> q)
-          //
-          //                    println(s"$name joined the company!")
-          //                  })
-          //                })
-          //              case Text(str, bool) if name != "" =>
-          //                queuesList.update(x => {
-          //                  x.get(name) match {
-          //                    case Some(y) =>
-          //                      messageQueue.enqueue1(Text(s"$name: $str", bool))
-          //                      println(messageQueue)
-          //                      println(s"$name: $str")
-          //                      y.enqueue1(Text(str, bool))
-          //                  }
-          //
-          //                  x
-          //                })
-          //
-          //            })
-          //          }
-
           WebSocketBuilder[IO].build(outStream, inStreamProcessor2)
   }
 
@@ -97,9 +49,15 @@ class ChatService(queuesList: Ref[IO, mutable.Map[String, Queue[IO, WebSocketFra
 }
 
 object ChatService {
+
+  type Name = String
+  case class ChatMessage(name: Name, wsf: WebSocketFrame) {
+    def get(): String = {
+      s"$name: $wsf.data"
+    }
+  }
+
   def apply(): IO[ChatService] = for {
-    queuesList <- Ref.of[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]](mutable.Map.empty)
-    messageQueue <- Queue.unbounded[IO, WebSocketFrame]
     consumers <- Ref.of[IO, List[Queue[IO, WebSocketFrame]]](List.empty)
-  } yield new ChatService(queuesList, messageQueue, consumers)
+  } yield new ChatService(consumers)
 }
