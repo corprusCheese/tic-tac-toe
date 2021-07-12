@@ -21,8 +21,8 @@ object FileService extends Http4sDsl[IO] with AbstractService {
   }
 
   private val fileService: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case req@GET -> Root / path if List(".js", ".css", ".html").exists(path.endsWith) => static(path, blocker, req)
-    case req@GET -> Root / "build" / path if List(".js", ".css").exists(path.endsWith) => staticBuild(path, blocker, req)
+    case req@GET -> Root / path if List(".js", ".css", ".html", ".ico").exists(path.endsWith) => static(path, blocker, req)
+    case req@GET -> Root / "build" / path if List(".js", ".css", ".ico").exists(path.endsWith) => staticBuild(path, blocker, req)
     case req@GET -> Root / "global.css" => StaticFile.fromResource("/front/public/build/global.css", blocker, Some(req)).getOrElseF(NotFound())
     case req@GET -> Root => StaticFile.fromResource(s"/front/public/index.html", blocker, Some(req)).getOrElseF(NotFound())
   }

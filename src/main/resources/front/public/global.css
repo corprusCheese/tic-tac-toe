@@ -1,8 +1,6 @@
 .ceil {
 	border: 1px slategray solid;
 	display: inline-block;
-	/*padding-bottom:5%;
-	padding-left:5%;*/
 	width:5vw;
 	height:5vw;
 }
@@ -15,6 +13,18 @@
 	margin: auto;
 	width: fit-content;
 	padding-top: 5%;
+}
+
+.reset, .result  {
+	width:5vw;
+	text-align: center;
+	padding: 10px 20px;
+	margin: 5px auto;
+}
+
+.reset {
+	border: 1px gray solid;
+	cursor: pointer;
 }
 
 html, body, main {

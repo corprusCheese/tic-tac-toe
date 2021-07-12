@@ -29,7 +29,7 @@
 	}
 
 	function cellWrapper(html, rowIndex, index) {
-		return "<div class='ceil' data-i='"+rowIndex+"' data-j='"+index+"'>"+html+"</div>"
+		return "<div class='ceil' on:click={console.log(rowIndex, index)} data-i='"+rowIndex+"' data-j='"+index+"'>"+html+"</div>"
 	}
 
 	function rowWrapper(html) {
@@ -37,8 +37,9 @@
 	}
 
 	let htmlBoard = ""
+	let result = ""
 	axios.get('/board').then(res => {
-		let board = new Map(Object.entries(res.data.board))
+		const board = new Map(Object.entries(res.data.board))
 		htmlBoard = getBoard(board)
 	})
 
@@ -46,6 +47,8 @@
 
 <main>
 	<div class="wrapper">
-		<div class="board">{@html htmlBoard}</div>
+		<div class="board" >{@html htmlBoard}</div>
 	</div>
+	<div class="reset"> Заново </div>
+	<div class="result"> { result } </div>
 </main>
