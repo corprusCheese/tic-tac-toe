@@ -23,6 +23,14 @@ import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
 import scala.collection.mutable
 
+
+object Streams {
+  val streams: IO[(Ref[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]], Queue[IO, WebSocketFrame])] = for {
+    queuesList <- Ref.of[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]](mutable.Map.empty)
+    messageQueue <- Queue.unbounded[IO, WebSocketFrame]
+  } yield (queuesList, messageQueue)
+}
+
 object ChatService extends Http4sDsl[IO] with AbstractService {
 
   private val chatService: HttpRoutes[IO] = HttpRoutes.of[IO] {
@@ -30,7 +38,9 @@ object ChatService extends Http4sDsl[IO] with AbstractService {
       object ChatStreams {
         def doWork(queuesList: Ref[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]],
                    messageQueue: Queue[IO, WebSocketFrame]): (Stream[IO, WebSocketFrame], Pipe[IO, WebSocketFrame, Unit]) = {
-          val outStream: Stream[IO, WebSocketFrame] = messageQueue.dequeue
+          val outStream: Stream[IO, WebSocketFrame] = {
+            messageQueue.dequeue
+          }
 
           val inStreamProcessor: Pipe[IO, WebSocketFrame, Unit] = stream => {
             var name = ""
@@ -46,15 +56,18 @@ object ChatService extends Http4sDsl[IO] with AbstractService {
                   })
                 })
               case Text(str, bool) if name != "" =>
-                queuesList.get.map(x => {
+                queuesList.update(x => {
                   x.get(name) match {
                     case Some(y) =>
-                      y.enqueue1(Text(str, bool))
                       messageQueue.enqueue1(Text(s"$name: $str", bool))
-
+                      println(messageQueue)
                       println(s"$name: $str")
+                      y.enqueue1(Text(str, bool))
                   }
+
+                  x
                 })
+
             })
           }
 
@@ -64,10 +77,9 @@ object ChatService extends Http4sDsl[IO] with AbstractService {
 
 
       val result = for {
-        queuesList <- Ref.of[IO, mutable.Map[String, Queue[IO, WebSocketFrame]]](mutable.Map.empty)
-        messageQueue <- Queue.unbounded[IO, WebSocketFrame]
+        streams <- Streams.streams
       } yield {
-        val str = ChatStreams.doWork(queuesList, messageQueue)
+        val str = ChatStreams.doWork(streams._1, streams._2)
         WebSocketBuilder[IO].build(str._1, str._2)
       }
 
