@@ -9,10 +9,15 @@ import org.http4s.{Request, Response}
 import org.http4s.server.Router
 
 object MainService {
-  val api: Kleisli[IO, Request[IO], Response[IO]] = Router(
-    "/" -> FileService.getInstance(),
-    "/" -> WsService.getInstance(),
-    "/" -> HttpService.getInstance(),
-    "/chat" -> ChatService.getInstance()
-  ).orNotFound
+  val api: IO[Kleisli[IO, Request[IO], Response[IO]]] = {
+    ChatService.apply().map(chatService => {
+
+      Router(
+        "/" -> FileService.getInstance(),
+        "/" -> WsService.getInstance(),
+        "/" -> HttpService.getInstance(),
+        "/chat" -> chatService.getInstance()
+      ).orNotFound
+    })
+  }
 }
