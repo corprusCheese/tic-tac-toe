@@ -31,7 +31,6 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
 
   private val chatService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case req@GET -> Root / "start" =>
-      // second
       val inStreamProcessor: Pipe[IO, WebSocketFrame, Unit] = stream => {
         def inputLeftStreamAsInit(stream: Stream[IO, WebSocketFrame]) = {
           val ior: Ior.Left[Stream[IO, WebSocketFrame]] = Ior.Left(stream)
@@ -59,7 +58,10 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
             case (name, Some(message)) => (name, message)
           }).evalMap({
             case (name, message) =>
-              consumersListOfIors.get.flatMap(_.map(ior => enqueueIorToList(ior,stream, getMessage(name, message))).sequence).map(_ => ())
+              consumersListOfIors
+                .get
+                .flatMap(_.map(ior => enqueueIorToList(ior,stream, getMessage(name, message))).sequence)
+                .map(_ => ())
           })
         }
 
@@ -67,28 +69,19 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
         setStream(stream)
       }
 
-      // 1 3 4 5 2
       val outStream: Stream[IO, WebSocketFrame] = {
-        println(1)
-        Stream.eval(Queue.unbounded[IO, WebSocketFrame])
-          .evalMap(queue => {
-            println(5)
-            consumersListOfIors.update(iorUserList => {
-              iorUserList.map(ior => {
-                println(ior)
-                val newIor = ior.right match {
-                  case None =>
-                    ior.putRight(queue)
-                  case _ => ior
-                }
-                newIor
-              })
-            }).map(_=>queue)
-            //consumersListOfIors.update(ior::_).map(_ => queue)
-          }).flatMap(queue => {
-          println(2)
-          queue.dequeue
-        })
+        def inputRightQueueAsUpdate(queue: Queue[IO, WebSocketFrame], ior: MyIor): MyIor = {
+          ior.right match {
+            case None =>
+              ior.putRight(queue)
+            case _ => ior
+          }
+        }
+
+        Stream
+          .eval(Queue.unbounded[IO, WebSocketFrame])
+          .evalMap(queue => consumersListOfIors.update(iorUserList => iorUserList.map(ior => inputRightQueueAsUpdate(queue, ior))).map(_=>queue))
+          .flatMap(queue => queue.dequeue)
       }
       WebSocketBuilder[IO].build(outStream, inStreamProcessor)
   }
