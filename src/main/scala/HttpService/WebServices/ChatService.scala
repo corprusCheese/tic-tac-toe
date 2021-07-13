@@ -16,12 +16,15 @@ import org.http4s.websocket.WebSocketFrame.Text
 import cats._
 import cats.data.Ior
 import cats.effect.{Concurrent, Timer}
+import cats.data.Ior
+import cats.effect._
+import cats.effect.concurrent._
 import cats.implicits._
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 import cats.data.Ior
-import helloworld.HttpService.WebServices.ChatService.IorUserList
+import helloworld.HttpService.WebServices.ChatService._
 
 
 class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[IO] with AbstractService {
@@ -29,61 +32,39 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
   private val chatService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case req@GET -> Root / "start" =>
       // second
-      val inStreamProcessor2: Pipe[IO, WebSocketFrame, Unit] = stream => {
+      val inStreamProcessor: Pipe[IO, WebSocketFrame, Unit] = stream => {
+        def inputLeftStreamAsInit(stream: Stream[IO, WebSocketFrame]) = {
+          val ior: Ior.Left[Stream[IO, WebSocketFrame]] = Ior.Left(stream)
+          consumersListOfIors.update(ior::_)
+        }
 
-        println(3)
-        /*consumersListOfIors.get.map(iorUserList => {
-          iorUserList.map(ior => {
-            val newIor = ior.left match {
-              case None =>
-                ior.putLeft(stream)
-                ior
-              case _ => ior
-            }
-            newIor
+        def enqueueIorToList(ior: MyIor, stream: Stream[IO, WebSocketFrame], message: String) = {
+          if (ior.left.get != stream)
+            ior.right.get.enqueue1(Text(message))
+          else
+            ior.right.get.enqueue1(Text(s"You send the message!"))
+        }
+
+        def getMessage(name: String, message: String) = {
+          s"$name: $message"
+        }
+
+        def setStream(stream: Stream[IO, WebSocketFrame])= {
+          stream.mapAccumulate("")({
+            case (name, frame@Text(str, _)) if name == "" =>
+              (str, none[String])
+            case (name, frame@Text(str, _)) =>
+              (name, str.some)
+          }).collect({
+            case (name, Some(message)) => (name, message)
+          }).evalMap({
+            case (name, message) =>
+              consumersListOfIors.get.flatMap(_.map(ior => enqueueIorToList(ior,stream, getMessage(name, message))).sequence).map(_ => ())
           })
-          println(iorUserList)
-          iorUserList
-        })*/
-        val ior: Ior.Left[Stream[IO, WebSocketFrame]] = Ior.Left(stream)
+        }
 
-        consumersListOfIors.update(ior::_)
-
-        consumersListOfIors.get.map(iorUserList => {
-          iorUserList.map(ior => {
-            println(ior)
-            ior
-          })
-          iorUserList
-        })
-
-        println(ior)
-        println(consumersListOfIors.get)
-
-        println(4)
-
-        stream.mapAccumulate("")({
-          case (name, frame@Text(str, _)) if name == "" =>
-            (str, none[String])
-          case (name, frame@Text(str, _)) =>
-            (name, str.some)
-        }).collect({
-          case (name, Some(message)) => (name, message)
-        }).evalMap({
-          case (name, message) =>
-            consumersListOfIors
-              .get
-              .flatMap(_.map(ior => {
-                println(ior.left.get)
-                println(stream)
-                println(ior.left.get != stream)
-                if (ior.left.get != stream) {
-                  ior.right.get.enqueue1(Text(s"$name: $message"))
-                } else {
-                  ior.right.get.enqueue1(Text(s"You send the message!"))
-                }
-              }).sequence).map(_ => ())
-        })
+        inputLeftStreamAsInit(stream).unsafeRunSync()
+        setStream(stream)
       }
 
       // 1 3 4 5 2
@@ -109,7 +90,7 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
           queue.dequeue
         })
       }
-      WebSocketBuilder[IO].build(outStream, inStreamProcessor2)
+      WebSocketBuilder[IO].build(outStream, inStreamProcessor)
   }
 
   override def getInstance(): HttpRoutes[IO] = chatService
@@ -117,7 +98,8 @@ class ChatService(consumersListOfIors: Ref[IO, IorUserList]) extends Http4sDsl[I
 
 object ChatService {
 
-  type IorUserList = List[Ior[Stream[IO, WebSocketFrame], Queue[IO, WebSocketFrame]]]
+  type MyIor = Ior[Stream[IO, WebSocketFrame], Queue[IO, WebSocketFrame]]
+  type IorUserList = List[MyIor]
 
   def apply(): IO[ChatService] = for {
     consumers <- Ref.of[IO, IorUserList](List.empty)
