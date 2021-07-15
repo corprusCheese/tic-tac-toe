@@ -33,67 +33,31 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
   private val chatService: HttpRoutes[F] = HttpRoutes.of[F] {
     case req@GET -> Root / "start" =>
 
-      def inputLeftStreamAsInit(stream: Stream[F, WebSocketFrame]): F[Unit] = {
+      def inputLeftStreamAsInit(stream: Stream[F, WebSocketFrame]): F[Unit] =
         consumersListOfIors.update(Ior.Left(Ior.Right(stream))::_)
-      }
 
-      def inputRightQueueAsUpdate(queue: Queue[F, WebSocketFrame], ior: MyIor[F]): MyIor[F] = {
+      def inputRightQueueAsUpdate(queue: Queue[F, WebSocketFrame], ior: MyIor[F]): MyIor[F] =
         ior.right match {
           case None => ior.putRight(queue)
           case _ => ior
         }
-      }
 
-      def inputLeftStreamAsUpdate(stream: Stream[F, WebSocketFrame], ior: MyIor[F]): MyIor[F] = {
-        ior.left match {
-          case None =>
-            ior.putLeft(Ior.Right(stream))
-          case _ => ior
-        }
-      }
-
-      def predicateForFindByName(myIor: MyIor[F], name:String): Boolean = {
+      def predicateForFindByName(myIor: MyIor[F], name:String): Boolean =
         myIor.left match {
           case Some(ior) => ior.left match {
-            case Some(str) =>
-              str == name
+            case Some(str) => str == name
             case _ => false
           }
           case _ => false
         }
-      }
 
-      def spellToOptionStream(optionMyIor: Option[MyIor[F]]): Option[Stream[F, WebSocketFrame]] = {
-        optionMyIor match {
-          case Some(myIor) => myIor.left match {
-            case Some(ior) => ior.right match {
-              case Some(stream) =>
-                Some(stream)
-              case _ => None
-            }
-            case _ => None
-          }
-          case None => None
-        }
-      }
-
-      def sendSimpleMessage(ior: MyIor[F], message: String):F[Unit] = {
+      def sendSimpleMessage(ior: MyIor[F], message: String): F[Unit] =
         ior.right match {
           case Some(queue) => queue.enqueue1(Text(message))
           case _ => println("error").pure[F]
         }
-      }
 
-      def sendTargetMessage(ior: MyIor[F], message: String, optionStream: Option[Stream[F, WebSocketFrame]]): F[Unit] = {
-        optionStream match {
-          case Some(_) => ior.right.get.enqueue1(Text(message + "(targetMessage)"))
-            sendSimpleMessage(ior, message + "(targetMessage)")
-          case None => println("sThere is no such user!").pure[F]
-            //sendSimpleMessage(ior, s"There is no such user!")
-        }
-      }
-
-      def isCurrentStream(ior: MyIor[F], stream: Stream[F, WebSocketFrame]): Option[Boolean] = {
+      def isCurrentStream(ior: MyIor[F], stream: Stream[F, WebSocketFrame]): Option[Boolean] =
         ior.left match {
           case Some(myIor) => myIor.right match {
             case Some(value) => Some(value == stream)
@@ -101,95 +65,125 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
           }
           case _ => None
         }
-      }
 
-      def findIorByName(name: String): F[Option[MyIor[F]]] = {
+      def findIorByName(name: String): F[Option[MyIor[F]]] =
         consumersListOfIors
           .get
           .map(_.find(myIor => predicateForFindByName(myIor, name)))
-      }
 
-      def isIorByNameFounded(name: String): F[Boolean] = {
+      def isIorByNameFounded(name: String): F[Boolean] =
         findIorByName(name).map {
-          case Some(value) => true
+          case Some(_) => true
           case None => false
         }
-      }
 
-      def sendMessageByIor(ior: MyIor[F], optionIor: Option[MyIor[F]], message: String) = {
+      def sendTargetMessage(ior: MyIor[F], iorFound: MyIor[F], message: String): F[Unit] =
+        if (iorFound == ior)
+          sendSimpleMessage(ior, message + " (targetMessage)")
+        else
+          sendSimpleMessage(ior, message + " (not targetMessage)")
+
+      def sendMessageByIor(ior: MyIor[F], optionIor: Option[MyIor[F]], message: String): F[Unit] =
         optionIor match {
-          case Some(findedIor) =>
-            if (findedIor == ior)
-              sendSimpleMessage(ior, message + " (targetMessage)")
-            else
-              sendSimpleMessage(ior, message + " (not targetMessage)")
-
+          case Some(iorFound) => sendTargetMessage(ior, iorFound, message)
           case None => println("sThere is no such user!").pure[F]
         }
+
+      def sendCommandMessage(ior: MyIor[F], name: String, message: String): F[Unit] =
+        findIorByName(name)
+          .map(option => sendMessageByIor(ior, option, message))
+          .flatMap(_.map(_ => ()))
+
+      def getNameFromIor(myIor: MyIor[F]): String = {
+          myIor.left match {
+            case Some(ior) => ior.left match {
+              case Some(name) => name
+              case _ => ""
+            }
+            case _ => ""
+          }
       }
 
-      def trySendTarget(ior: MyIor[F], stream: Stream[F, WebSocketFrame], message: String): F[Unit] = {
+      def getAllUsers(ior: MyIor[F]): F[Unit] = {
+        for {
+          list <- consumersListOfIors.get.map(_.map(getNameFromIor))
+          string = list.mkString(", ")
+          res <- sendSimpleMessage(ior, string)
+        } yield res
+      }
+
+      def dontSend(): F[Unit] = println("don't send").pure[F]
+
+      def trySendTarget(ior: MyIor[F], message: String): F[Unit] =
         message.split(" ").toList match {
-          case senderMessage::command::name::_ if command == "/w" =>
-            findIorByName(name)
-              .map(option => sendMessageByIor(ior, option, message))
-              .flatMap(_.map(_ => ()))
+          case senderMessage::command::name::_ if command == "/w" => sendCommandMessage(ior, name, message)
+          case senderMessage::command::_ if command == "/g" => dontSend()
           case _ => sendSimpleMessage(ior, message)
         }
-      }
 
-      def getNameFromMessage(message: String): String = {
+      def getPartsFromMessage(message: String): (String, String, String) =
         message.split(" ").toList match {
-          case senderMessage::command::name::_ => name.toString
-          case _ => ""
+          case senderMessage::command::name::_ => (senderMessage.dropRight(1).trim, command, name)
+          case senderMessage::command::_ => (senderMessage.dropRight(1).trim, command, "")
+          case senderMessage::_ => (senderMessage.dropRight(1).trim, "", "")
+          case _ => ("", "", "")
         }
-      }
 
-      def sendIfThereIsUser(ior:MyIor[F], bool: Boolean) = {
+      def sendIfThereIsUser(ior:MyIor[F], bool: Boolean): F[Unit] =
         if (bool)
           sendSimpleMessage(ior, s"You send the message!")
         else
           sendSimpleMessage(ior, s"There is no such user!")
-      }
 
-      def sendSenderMessage(ior:MyIor[F], name: String): F[Unit] = {
+      def sendSenderMessage(ior:MyIor[F], name: String): F[Unit] =
         isIorByNameFounded(name)
           .map(bool => sendIfThereIsUser(ior, bool))
           .flatMap(_.map(_ => ()))
-      }
 
-      def enqueueIorToList(ior: MyIor[F], stream: Stream[F, WebSocketFrame], message: String): F[Unit] = {
-        isCurrentStream(ior, stream) match {
-          case Some(boolean: Boolean) =>
-            if (boolean) {
-              getNameFromMessage(message) match {
-                case value if value == "" => sendSimpleMessage(ior, s"You send the message!")
-                case value if value != "" => sendSenderMessage (ior, value)
-              }
-            } else trySendTarget(ior, stream, message)
-          case None =>
-            println("error").pure[F]
+      def trySendToSender(ior: MyIor[F], message: String): F[Unit] = {
+        val parts = getPartsFromMessage(message)
+        parts._3 match {
+          case value if value == "" =>
+            if (parts._2 == "/g")
+              getAllUsers(ior)
+            else
+              sendSimpleMessage(ior, s"You send the message!")
+          case value if value != "" => sendSenderMessage (ior, value)
         }
       }
 
-      def getMessage(name: String, message: String): String = {
-        s"$name: $message"
-      }
+      def sendMessage(ior: MyIor[F], message: String, isCurrentStream: Boolean): F[Unit] =
+        if (isCurrentStream)
+          trySendToSender(ior, message)
+        else
+          trySendTarget(ior, message)
 
-      def setNameToIor(str: String, stream: Stream[F, WebSocketFrame]): F[Unit] = {
+      def enqueueIorToList(ior: MyIor[F], stream: Stream[F, WebSocketFrame], message: String): F[Unit] =
+        isCurrentStream(ior, stream) match {
+          case Some(boolean: Boolean) =>
+            sendMessage(ior, message, boolean)
+          case None =>
+            println("error").pure[F]
+        }
+
+      def getMessage(name: String, message: String): String = s"$name: $message"
+
+      def setNameToIor(str: String, stream: Stream[F, WebSocketFrame]): F[Unit] =
         consumersListOfIors.update(_.map(myIor => {
           myIor.left match {
             case Some(ior) => ior.right match {
-              case Some(myStream) =>
-                if (myStream == stream)
-                  myIor.putLeft(Ior.Both(str, stream))
-                else myIor
+              case Some(myStream) => if (myStream == stream) myIor.putLeft(Ior.Both(str, stream)) else myIor
             }
           }
         }))
-      }
 
-      def setStream(stream: Stream[F, WebSocketFrame]): Stream[F, Unit]= {
+      def enqueueMessage(stream: Stream[F, WebSocketFrame], message: String): F[Unit] =
+        consumersListOfIors
+          .get
+          .flatMap(_.map(ior => enqueueIorToList(ior, stream, message)).sequence)
+          .map(_ => ())
+
+      def setStream(stream: Stream[F, WebSocketFrame]): Stream[F, Unit] =
         stream.evalMapAccumulate("")({
           case (name, frame@Text(str, _)) if name == "" =>
             setNameToIor(str, stream).map(_=>(str, none[String]))
@@ -198,26 +192,25 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
         }).collect({
           case (name, Some(message)) => (name, message)
         }).evalMap({
-          case (name, message) =>
-            consumersListOfIors
-              .get
-              .flatMap(_.map(ior => enqueueIorToList(ior, stream, getMessage(name, message))).sequence)
-              .map(_ => ())
+          case (name, message) => enqueueMessage(stream, getMessage(name, message))
         })
-      }
 
+      val pipe: Pipe[F, WebSocketFrame, Unit] = stream =>
+        Stream
+          .eval(inputLeftStreamAsInit(stream))
+          .flatMap(_=>setStream(stream))
 
-      val pipe: Pipe[F, WebSocketFrame, Unit] =
-        stream => Stream.eval(inputLeftStreamAsInit(stream)).flatMap(_=>setStream(stream))
       val inStreamProcessor: F[Pipe[F, WebSocketFrame, Unit]] = pipe.pure[F]
 
-      val outStream: F[Stream[F, WebSocketFrame]] = {
+      val outStream: F[Stream[F, WebSocketFrame]] =
         Stream
           .eval(Queue.unbounded[F, WebSocketFrame])
-          .evalMap(queue => Timer[F].sleep(1.second) >> consumersListOfIors.update(iorUserList => iorUserList.map(ior => inputRightQueueAsUpdate(queue, ior))).map(_=>queue))
+          .evalMap(queue =>
+            Timer[F].sleep(1.second) >>
+              consumersListOfIors.update(iorUserList => iorUserList.map(ior => inputRightQueueAsUpdate(queue, ior)))
+                .map(_=>queue))
           .flatMap(queue => queue.dequeue)
           .pure[F]
-      }
 
       for {
         in <- inStreamProcessor
