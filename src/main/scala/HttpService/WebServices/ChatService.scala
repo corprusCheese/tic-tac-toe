@@ -1,9 +1,18 @@
 package helloworld
 package HttpService.WebServices
 
+import cats.data.Kleisli
+import cats.effect.IO
+import helloworld.HttpService.Game.DataGameHandler
+import io.circe._, io.circe.parser._
+import io.circe.{Decoder, Encoder, HCursor, Json}
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.Router
+import org.http4s.{Callback, HttpRoutes, Request, Response}
+import io.circe.syntax.EncoderOps
+import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import helloworld.HttpService.Algebra.AbstractService
 import helloworld.HttpService.Game.Logic._
-import cats.effect.IO
 import cats.effect.concurrent._
 import cats.implicits._
 import fs2.{Stream, _}
@@ -14,13 +23,18 @@ import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
 import cats._
-import cats.data.Ior
 import cats.effect.{Concurrent, Timer}
-import cats.data.Ior
 import cats.effect._
 import cats.effect.concurrent._
 import cats.implicits._
-
+import cats.data.Kleisli
+import cats.effect.IO
+import helloworld.HttpService.Game.DataGameHandler
+import org.http4s.dsl.Http4sDsl
+import org.http4s.server.Router
+import org.http4s.{Callback, HttpRoutes, Request, Response}
+import helloworld.HttpService.Game.Game._
+import helloworld.HttpService.Game.Logic.{cs, _}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import cats.data.Ior
@@ -190,17 +204,46 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
           .flatMap(_.map(ior => enqueueIorToList(ior, stream, message)).sequence)
           .map(_ => ())
 
-      def setStream(stream: Stream[F, WebSocketFrame]): Stream[F, Unit] =
+      def setNameHandler(json:String, stream: Stream[F, WebSocketFrame]): F[(String, Option[String])] = {
+        parse(json) match {
+          case Right(json) =>
+            for {
+              o <- MonadThrow[F].fromEither(json.as[SetName]).map(setName => setNameToIor(setName.name, stream).map(_ => (setName.name, none[String])))
+              res <- o
+            } yield res
+
+          case _ => ("", none[String]).pure[F]
+        }
+      }
+
+      def setMessageHandler(name: String, json: String): F[(String, Option[String])] = {
+        parse(json) match {
+          case Right(json) =>
+            for {
+              o <- MonadThrow[F].fromEither(json.as[ChatRequest]).map({
+                case publishMessage: PublishMessage => (name, publishMessage.message.some).pure[F]
+                case sendPrivateMessage: SendPrivateMessage => (name, ("/w " + sendPrivateMessage.name + " " + sendPrivateMessage.message).some).pure[F]
+              })
+              res <- o
+            } yield res
+          case _ => (name, none[String]).pure[F]
+        }
+      }
+
+      def setStream(stream: Stream[F, WebSocketFrame]): Stream[F, Unit] = {
         stream.evalMapAccumulate("")({
-          case (name, frame@Text(str, _)) if name == "" =>
-            setNameToIor(str, stream).map(_=>(str, none[String]))
-          case (name, frame@Text(str, _)) =>
-            (name, str.some).pure[F]
+          case (name, frame@Text(json, _)) if name == "" =>
+            setNameHandler(json, stream)
+          case (name, frame@Text(json, _)) =>
+            setMessageHandler(name, json)
         }).collect({
-          case (name, Some(message)) => (name, message)
+          case (name, Some(message)) =>
+            (name, message)
         }).evalMap({
-          case (name, message) => enqueueMessage(stream, getMessage(name, message))
+          case (name, message) =>
+            enqueueMessage(stream, getMessage(name, message))
         })
+      }
 
       val pipe: Pipe[F, WebSocketFrame, Unit] = stream =>
         Stream
@@ -237,4 +280,46 @@ object ChatService {
   def apply[F[_]: Concurrent: Timer: Monad](): F[ChatService[F]] = for {
     consumers <- Ref.of[F, IorUserList[F]](List.empty[MyIor[F]])
   } yield new ChatService(consumers)
+
+  sealed trait ChatRequest
+  final case class SetName(name: String) extends ChatRequest
+  final case class PublishMessage(message: String) extends ChatRequest
+  final case class SendPrivateMessage(name: String, message: String) extends ChatRequest
+
+  sealed trait ChatResponse
+  final case class PublicMessage(from: String, message: String) extends ChatResponse
+  final case class PrivateMessage(from: String, message: String) extends ChatResponse
+
+  final case class ErrorResponse(description: String) extends ChatResponse
+
+  implicit val decodeSetName: Decoder[SetName] = (c: HCursor) => {
+    for {
+      req <- c.downField("request").as[String]
+      name <- c.downField("payload").downField("name").as[String]
+      setName = if (req == "set_name") name else ""
+    } yield SetName(setName)
+  }
+
+  implicit val decodeChatRequest: Decoder[ChatRequest] = (c: HCursor) => {
+    for {
+      request <- c.downField("request").as[String]
+      name <- c.downField("payload").downField("name").as[String]
+      message <- c.downField("payload").downField("message").as[String]
+      res = request match {
+        case "publish_message" => PublishMessage(message)
+        case "send_private_message" => SendPrivateMessage(name, message)
+        case _ => PublishMessage("")
+      }
+    } yield res
+  }
+
+  implicit val encodePublicMessage: Encoder[PublicMessage] = (a: PublicMessage) => Json.obj(
+    ("response", "public_message".asJson),
+    ("data", (("message", a.message.asJson),("from", a.from.asJson)).asJson)
+  )
+
+  implicit val encodePrivateMessage: Encoder[PrivateMessage] = (a: PrivateMessage) => Json.obj(
+    ("response", "private_message".asJson),
+    ("data", (("message", a.message.asJson),("from", a.from.asJson)).asJson)
+  )
 }
