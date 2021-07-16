@@ -49,6 +49,12 @@ import scala.util.Try
 class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, IorUserList[F]]) extends Http4sDsl[F] {
   private val chatService: HttpRoutes[F] = HttpRoutes.of[F] {
     case req@GET -> Root / "start" =>
+
+      def targetMarkMessage(): String = "(You):"
+      def usersMarkMessage(): String = "users:"
+      def notifyMessageOfSending(): String = s"You send the message!"
+      def notifyMessageOfWrongUser(): String = s"There is no such user!"
+
       def dontSend(): F[Unit] = Monad[F].pure(())
 
       def inputLeftStreamAsInit(stream: Stream[F, WebSocketFrame]): F[Unit] =
@@ -74,10 +80,12 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
         array.toList match {
           case sender::mark::_ if mark == targetMarkMessage() =>
             PrivateMessage(sender.trim, array.slice(2, array.length).mkString(" "))
+          case usersMark::_ if usersMark == usersMarkMessage() =>
+            MessageToMe(array.slice(1, array.length).mkString(" "))
           case sender::_ =>
             array.mkString(" ") match {
               case value if value == notifyMessageOfWrongUser() || value == notifyMessageOfSending()  =>
-                PublicMessage("system", value)
+                MessageToMe(value)
               case _ =>
                 PublicMessage(sender.dropRight(1).trim, array.slice(1, array.length).mkString(" "))
             }
@@ -90,6 +98,7 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
         response match {
           case value: PrivateMessage => value.asJson.toString()
           case value: PublicMessage => value.asJson.toString()
+          case value: MessageToMe => value.asJson.toString()
           case value: ErrorResponse => value.asJson.toString()
         }
       }
@@ -119,8 +128,6 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
           case Some(_) => true
           case None => false
         }
-
-      def targetMarkMessage(): String = "(You):"
 
       def getTargetMessage(message: String): String =
         getPartsFromMessage(message) match {
@@ -160,7 +167,7 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
         for {
           list <- consumersListOfIors.get.map(_.map(getNameFromIor))
           string = list.mkString(", ")
-          res <- sendSimpleMessage(ior, string)
+          res <- sendSimpleMessage(ior, usersMarkMessage() + " " + string)
         } yield res
 
       def trySendTarget(ior: MyIor[F], message: String): F[Unit] =
@@ -178,8 +185,7 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
           case _ => ("", "", "")
         }
 
-      def notifyMessageOfSending(): String = s"You send the message!"
-      def notifyMessageOfWrongUser(): String = s"There is no such user!"
+
 
       def sendIfThereIsUser(ior: MyIor[F], bool: Boolean): F[Unit] =
         if (bool)
@@ -202,6 +208,7 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
         getPartsFromMessage(message) match {
           case (sender, command, name) if name == "" => sendToSenderByCommand(ior, command)
           case (sender, command, name) if name != "" && command == "/w" => sendSenderMessage(ior, name)
+          case (sender, command, name) if name != ""  => sendSimpleMessage(ior, notifyMessageOfSending())
           case _ => dontSend()
         }
 
@@ -323,6 +330,7 @@ object ChatService {
   final case class PublicMessage(from: String, message: String) extends ChatResponse
   final case class PrivateMessage(from: String, message: String) extends ChatResponse
   final case class ErrorResponse(description: String) extends ChatResponse
+  final case class MessageToMe(message: String) extends ChatResponse
 
   implicit val decodeSetName: Decoder[SetName] = (c: HCursor) => {
     for {
@@ -391,6 +399,11 @@ object ChatService {
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = (a: ErrorResponse) => Json.obj(
     ("response", "error".asJson),
     ("data", (Map("message" -> a.description.asJson)).asJson)
+  )
+
+  implicit val encodeMessageToMe: Encoder[MessageToMe] = (a: MessageToMe) => Json.obj(
+    ("response", "system_message".asJson),
+    ("data", (Map("message" -> a.message.asJson)).asJson)
   )
 
 }
