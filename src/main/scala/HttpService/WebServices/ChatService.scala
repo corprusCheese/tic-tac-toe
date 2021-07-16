@@ -179,13 +179,11 @@ class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, Io
 
       def getPartsFromMessage(message: String): (String, String, String) =
         message.split(" ").toList match {
-          case senderMessage::command::name::_ => (senderMessage.dropRight(1).trim, command.trim, name.trim)
-          case senderMessage::command::_ => (senderMessage.dropRight(1).trim, command.trim, "")
-          case senderMessage::_ => (senderMessage.dropRight(1).trim, "", "")
+          case senderMessage :: command :: name :: _ => (senderMessage.dropRight(1).trim, command.trim, name.trim)
+          case senderMessage :: command :: _ => (senderMessage.dropRight(1).trim, command.trim, "")
+          case senderMessage :: _ => (senderMessage.dropRight(1).trim, "", "")
           case _ => ("", "", "")
         }
-
-
 
       def sendIfThereIsUser(ior: MyIor[F], bool: Boolean): F[Unit] =
         if (bool)

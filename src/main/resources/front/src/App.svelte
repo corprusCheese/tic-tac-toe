@@ -1,17 +1,24 @@
 <script>
 	import axios from "axios";
 
-	function getBoard(board) {
-		let html = ""
-		board.forEach((row, i) => {
-			row = new Map(Object.entries(row))
-			let rowWrap = ""
-			row.forEach((item, j) => {
-				rowWrap += getItem(item, i, j)
+	function rowWrapper() {
+		let row = document.createElement("div")
+		row.setAttribute("class", 'row-wrapper')
+
+		return row
+	}
+
+	function getBoard(boardValues) {
+		let board = document.getElementById("board")
+		boardValues.forEach((row, i) => {
+			let rowWrap = rowWrapper()
+			let rowEntries = new Map(Object.entries(row))
+			rowEntries.forEach((item, j)=> {
+				rowWrap.appendChild(getItem(item, i, j))
 			})
-			html += rowWrapper(rowWrap)
+
+			board.appendChild(rowWrap)
 		})
-		return html
 	}
 
 	function getItem(item, rowIndex, index) {
@@ -29,25 +36,35 @@
 	}
 
 	function cellWrapper(html, rowIndex, index) {
-		return "<div class='ceil' on:click={console.log(rowIndex, index)} data-i='"+rowIndex+"' data-j='"+index+"'>"+html+"</div>"
+		let cell = document.createElement("div")
+		cell.setAttribute("class", 'ceil')
+		cell.setAttribute("data-i", rowIndex)
+		cell.setAttribute("data-j", index)
+		cell.addEventListener("click", clickHandler(rowIndex, index, null));
+
+		cell.innerHTML = html
+
+		return cell
 	}
 
-	function rowWrapper(html) {
-		return "<div class='row-wrapper'>"+html+"</div>"
+	function clickHandler(i, j) {
+		return () => {
+			console.log(i+", "+j)
+		}
 	}
 
-	let htmlBoard = ""
+
 	let result = ""
 	axios.get('/board').then(res => {
-		const board = new Map(Object.entries(res.data.board))
-		htmlBoard = getBoard(board)
+		const boardValues = new Map(Object.entries(res.data.board))
+		getBoard(boardValues)
 	})
 
 </script>
 
 <main>
 	<div class="wrapper">
-		<div class="board" >{@html htmlBoard}</div>
+		<div id="board" class="board"></div>
 	</div>
 	<div class="reset"> Заново </div>
 	<div class="result"> { result } </div>
