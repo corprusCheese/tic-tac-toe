@@ -4,8 +4,6 @@ version := "0.1"
 
 scalaVersion := "2.13.6"
 
-idePackagePrefix := Some("helloworld")
-
 val http4sVersion = "0.21.24"
 val circeVersion = "0.14.1"
 val scalaTestVersion = "3.0.8"

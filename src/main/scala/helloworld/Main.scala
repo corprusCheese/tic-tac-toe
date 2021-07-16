@@ -1,11 +1,11 @@
 package helloworld
 
-import HttpService.MainService
+import cats.effect.{ExitCode, IO, IOApp}
+import org.http4s.server.blaze.BlazeServerBuilder
+import cats.implicits._
+import helloworld.HttpService.MainService
 
-import cats.effect._
-import cats.implicits.catsSyntaxApplicativeId
-import org.http4s.server.blaze._
-
+import scala.concurrent.ExecutionContext
 
 object Main extends IOApp {
   def getPropertiesForServer: IO[(Int, String)] =  {
@@ -17,7 +17,7 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     MainService.api.flatMap(api => {
       getPropertiesForServer.flatMap(props =>
-        BlazeServerBuilder[IO]
+        BlazeServerBuilder[IO](ExecutionContext.global)
           .bindHttp(props._1, props._2)
           .withHttpApp(api)
           .serve

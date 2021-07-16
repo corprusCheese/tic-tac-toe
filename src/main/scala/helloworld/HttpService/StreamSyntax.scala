@@ -1,9 +1,8 @@
-package helloworld
-package HttpService
+package helloworld.HttpService
 
-import fs2.{Pipe, Stream}
-import fs2.concurrent.Queue
 import cats.implicits._
+import fs2.concurrent.Queue
+import fs2.{Pipe, Stream}
 
 trait StreamSyntax {
 
@@ -11,7 +10,7 @@ trait StreamSyntax {
     def fromQueueNoneTerminated(q: Queue[F, Option[A]]): Stream[F, A] =
       q.dequeue.unNoneTerminate
 
-    def enqueueNoneTerminated(q: Queue[F, Option[A]]): Pipe[F, A, Unit] = s =>
-      s.map(_.some).through(q.enqueue)
+    def enqueueNoneTerminated(q: Queue[F, Option[A]]): Pipe[F, A, Unit] =
+      s => s.map(_.some).through(q.enqueue)
   }
 }
