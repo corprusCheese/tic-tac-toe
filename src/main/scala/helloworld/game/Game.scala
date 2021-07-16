@@ -1,6 +1,6 @@
-package helloworld.HttpService.Game
+package helloworld.game
 
-import Logic.Dimension
+import helloworld.game.Logic.Dimension
 
 object Game {
   val logicService = new Logic

@@ -2,7 +2,7 @@ package helloworld.HttpService
 
 import cats.data.Kleisli
 import cats.effect.IO
-import helloworld.HttpService.Game.Logic._
+import helloworld.game.Logic._
 import helloworld.HttpService.WebServices.{ChatService, FileService, HttpService, WsService}
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.Router

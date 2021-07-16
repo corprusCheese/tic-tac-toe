@@ -2,7 +2,7 @@ package helloworld
 
 import helloworld.HttpService.WebServices.HttpService._
 
-import helloworld.HttpService.Game.Game._
+import helloworld.game.Game._
 import helloworld.HttpService.Game.Logic.{cs, _}
 
 import org.scalatest.FlatSpec

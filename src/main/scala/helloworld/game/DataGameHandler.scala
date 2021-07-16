@@ -1,6 +1,6 @@
-package helloworld.HttpService.Game
+package helloworld.game
 
-import helloworld.HttpService.Game.Logic._
+import Logic._
 
 object DataGameHandler {
   def getBoardAsMap(board: Board): Map[Int, Map[Int, String]] =

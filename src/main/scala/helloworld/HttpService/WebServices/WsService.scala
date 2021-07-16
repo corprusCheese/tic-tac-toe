@@ -4,10 +4,10 @@ import cats.effect.IO
 import cats.implicits._
 import fs2.concurrent.Queue
 import fs2.{Pipe, Stream}
-import helloworld.HttpService.Algebra.AbstractService
-import helloworld.HttpService.Game.DataGameHandler
-import helloworld.HttpService.Game.Game._
-import helloworld.HttpService.Game.Logic.{cs, _}
+import helloworld.game.Game._
+import helloworld.game.Logic.{cs, _}
+import helloworld.algebra.AbstractService
+import helloworld.game.DataGameHandler
 import io.circe.parser
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.websocket.WebSocketBuilder
@@ -17,7 +17,8 @@ import org.http4s.{HttpRoutes, Response}
 
 import scala.concurrent.duration.DurationInt
 
-object WsService extends Http4sDsl[IO] with AbstractService {
+// todo: rewrite with F instead of IO
+object WsService extends Http4sDsl[IO] with AbstractService[IO] {
 
   private val socketService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "begin" => begin()

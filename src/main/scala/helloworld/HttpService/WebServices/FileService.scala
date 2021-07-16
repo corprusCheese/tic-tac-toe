@@ -1,12 +1,13 @@
 package helloworld.HttpService.WebServices
 
 import cats.effect.{Blocker, IO}
-import helloworld.HttpService.Algebra.AbstractService
-import helloworld.HttpService.Game.Logic.{cs, _}
+import helloworld.game.Logic.{cs, _}
+import helloworld.algebra.AbstractService
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
-object FileService extends Http4sDsl[IO] with AbstractService {
+// todo: rewrite with F instead of IO
+object FileService extends Http4sDsl[IO] with AbstractService[IO] {
 
   private def static(file: String, blocker: Blocker, request: Request[IO]): IO[Response[IO]] =
     StaticFile.fromResource("/front/public/" + file, blocker, Some(request)).getOrElseF(NotFound())

@@ -1,17 +1,18 @@
 package helloworld.HttpService.WebServices
 
 import cats.effect.IO
-import helloworld.HttpService.Algebra.AbstractService
-import helloworld.HttpService.Game.DataGameHandler
-import helloworld.HttpService.Game.Game._
-import helloworld.HttpService.Game.Logic.{cs, _}
+import helloworld.game.Game._
+import helloworld.game.Logic.{cs, _}
+import helloworld.algebra.AbstractService
+import helloworld.game.DataGameHandler
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.http4s.HttpRoutes
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.Http4sDsl
 
-object HttpService extends Http4sDsl[IO] with AbstractService {
+// todo: Rewrite with F instead of IO (tagless final!)
+object HttpService extends Http4sDsl[IO] with AbstractService[IO] {
 
   private def getJsonBoardOnlyAsResponse(board: Board): Json =
     Json.obj("board" -> DataGameHandler.getBoardAsMap(board).asJson)

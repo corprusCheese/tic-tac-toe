@@ -1,7 +1,8 @@
-package helloworld.HttpService.Game
+package helloworld.game
+
+import Logic._
 
 import cats.effect.{Blocker, ContextShift, IO, Timer}
-import helloworld.HttpService.Game.Logic._
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}
 
@@ -27,6 +28,7 @@ object Logic {
   case class Position(x: Int, y: Int)
   case class Dimension(v: Int)
 
+  // todo: Remove this. Use F + implicits everywhere.
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
 
@@ -62,7 +64,7 @@ class Logic {
   )
 
   def initBoardOfDim(dim: Dimension): Board = {
-    var board: Board = List();
+    var board: Board = List()
     for (_ <- 0 until dim) {
       board = board :+ List.fill(dim)(None)
     }
@@ -79,7 +81,7 @@ class Logic {
   // todo: rewrite it in functional style
   def isSomeoneWin(board: Board): Boolean = {
     val boardT: Board                     = board.transpose
-    var result                            = false;
+    var result                            = false
     var listDiagonal1: List[Option[Mark]] = List()
     var listDiagonal2: List[Option[Mark]] = List()
     val count                             = board.size
