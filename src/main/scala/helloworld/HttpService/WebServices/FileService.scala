@@ -1,23 +1,24 @@
 package helloworld.HttpService.WebServices
 
-import cats.effect.{Blocker, IO}
-import helloworld.game.Logic.{cs, _}
+import cats.Monad
+import cats.effect.{Blocker, Concurrent, ContextShift, Timer}
+import cats.implicits.catsSyntaxApplicativeId
 import helloworld.algebra.AbstractService
+import helloworld.game.Logic._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
-// todo: rewrite with F instead of IO
-object FileService extends Http4sDsl[IO] with AbstractService[IO] {
+class FileService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
 
-  private def static(file: String, blocker: Blocker, request: Request[IO]): IO[Response[IO]] =
+  private def static(file: String, blocker: Blocker, request: Request[F]): F[Response[F]] =
     StaticFile.fromResource("/front/public/" + file, blocker, Some(request)).getOrElseF(NotFound())
 
-  private def staticBuild(file: String, blocker: Blocker, request: Request[IO]): IO[Response[IO]] =
+  private def staticBuild(file: String, blocker: Blocker, request: Request[F]): F[Response[F]] =
     StaticFile
       .fromResource("/front/public/build/" + file, blocker, Some(request))
       .getOrElseF(NotFound())
 
-  private val fileService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  private val fileService: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> Root / path if List(".js", ".css", ".html", ".ico").exists(path.endsWith) =>
       static(path, blocker, req)
     case req @ GET -> Root / "build" / path if List(".js", ".css", ".ico").exists(path.endsWith) =>
@@ -32,5 +33,10 @@ object FileService extends Http4sDsl[IO] with AbstractService[IO] {
         .getOrElseF(NotFound())
   }
 
-  override def getInstance(): HttpRoutes[IO] = fileService
+  override def getInstance(): HttpRoutes[F] = fileService
+}
+
+object FileService {
+  def apply[F[_]: Concurrent: Timer: Monad: ContextShift](): F[FileService[F]] =
+    new FileService[F].pure[F]
 }

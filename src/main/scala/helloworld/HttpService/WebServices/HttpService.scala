@@ -1,18 +1,19 @@
 package helloworld.HttpService.WebServices
 
-import cats.effect.IO
+import cats.{Monad, MonadThrow}
+import cats.effect.{Concurrent, ContextShift, Timer}
+import cats.implicits._
 import helloworld.game.Game._
-import helloworld.game.Logic.{cs, _}
 import helloworld.algebra.AbstractService
 import helloworld.game.DataGameHandler
+import helloworld.game.Logic._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import org.http4s.HttpRoutes
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.Http4sDsl
 
-// todo: Rewrite with F instead of IO (tagless final!)
-object HttpService extends Http4sDsl[IO] with AbstractService[IO] {
+class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
 
   private def getJsonBoardOnlyAsResponse(board: Board): Json =
     Json.obj("board" -> DataGameHandler.getBoardAsMap(board).asJson)
@@ -24,7 +25,7 @@ object HttpService extends Http4sDsl[IO] with AbstractService[IO] {
       "board"  -> DataGameHandler.getBoardAsMap(board).asJson
     )
 
-  private val gameService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  private val gameService: HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "board" =>
       Ok(
         getJsonAsResponse(
@@ -49,13 +50,10 @@ object HttpService extends Http4sDsl[IO] with AbstractService[IO] {
         )
       )
     case req @ POST -> Root / "board" =>
-      req.as[Json].flatMap { json =>
-        IO.fromEither(json.as[Position]).flatMap { position: Position =>
-          val state = logicService.addMarkAndGetNextState(
-            board,
-            turn,
-            position
-          )
+       req.as[Json]
+         .flatMap { json =>
+           MonadThrow[F].fromEither(json.as[Position]).flatMap { position: Position =>
+             val state = logicService.addMarkAndGetNextState(board, turn, position)
 
           board = state._1
           turn = state._2
@@ -65,5 +63,10 @@ object HttpService extends Http4sDsl[IO] with AbstractService[IO] {
       }
   }
 
-  override def getInstance(): HttpRoutes[IO] = gameService
+  override def getInstance(): HttpRoutes[F] = gameService
+}
+
+object HttpService {
+  def apply[F[_]: Concurrent: Timer: Monad: ContextShift](): F[HttpService[F]] =
+    new HttpService[F].pure[F]
 }

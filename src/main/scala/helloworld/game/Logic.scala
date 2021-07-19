@@ -28,10 +28,6 @@ object Logic {
   case class Position(x: Int, y: Int)
   case class Dimension(v: Int)
 
-  // todo: Remove this. Use F + implicits everywhere.
-  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
-
   implicit def dimension2int(dim: Dimension): Int = dim.v
   implicit def int2dimension(v: Int): Dimension   = Dimension(if (v < 1) 1 else v)
 
