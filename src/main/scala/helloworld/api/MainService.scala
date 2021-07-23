@@ -24,16 +24,16 @@ object MainService {
   val api: IO[Kleisli[IO, Request[IO], Response[IO]]] = {
     implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
     implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
+
     for {
       chatService <- ChatService.apply[IO]()
       wsService <- WsService.apply[IO]()
       fileService <- FileService.apply[IO]()
-      httpService <- HttpService.apply[IO]()
     } yield Router(
       "/chat" -> CORS(chatService.getInstance(), methodConfig),
       "/" -> CORS(wsService.getInstance(), methodConfig),
       "/" -> CORS(fileService.getInstance(), methodConfig),
-      "/" -> CORS(httpService.getInstance(), methodConfig)
+      "/" -> CORS(HttpService.create[IO]().getInstance(), methodConfig)
     ).orNotFound
 
   }

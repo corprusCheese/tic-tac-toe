@@ -81,4 +81,7 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
 object HttpService {
   def apply[F[_]: Concurrent: Timer: Monad: ContextShift](): F[HttpService[F]] =
     new HttpService[F].pure[F]
+
+  def create[F[_]: Concurrent: Timer: Monad: ContextShift](): HttpService[F] =
+    new HttpService[F]
 }
