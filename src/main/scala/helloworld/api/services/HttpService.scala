@@ -54,13 +54,18 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
          .flatMap { json =>
            MonadThrow[F].fromEither(json.as[Position]).flatMap { position: Position =>
              val state = logicService.addMarkAndGetNextState(board, turn, position)
-
-          board = state._1
-          turn = state._2
-
-          Ok(getJsonBoardOnlyAsResponse(board))
-        }
-      }
+             board = state._1
+             turn = state._2
+             //Ok(getJsonBoardOnlyAsResponse(board))
+             Ok(
+               getJsonAsResponse(
+                 board,
+                 turn,
+                 result
+               )
+             )
+           }
+         }
   }
 
   override def getInstance(): HttpRoutes[F] = gameService

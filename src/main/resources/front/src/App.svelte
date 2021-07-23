@@ -7,6 +7,8 @@
   		baseURL: devUrl
 	});
 
+	let result = ""
+
 	function rowWrapper() {
 		let row = document.createElement("div")
 		row.setAttribute("class", 'row-wrapper')
@@ -55,7 +57,6 @@
 
 	function clickHandler(cell, i, j) {
 		return () => {
-			console.log(i+", "+j)
 			instance({
 				method: "post",
 				url: "/board",
@@ -64,14 +65,13 @@
 					y: i
 				}
 			}).then((res) => {
-				console.log(res)
 				if (res.status === 200) {
 					const boardValues = new Map(Object.entries(res.data.board))
 					const rowValuesFound = new Map(Object.entries(boardValues.get(i.toString())))
 					const cellValueFound = rowValuesFound.get(j.toString())
-					console.log(cellValueFound)
 
 					cell.style.backgroundImage = setMark(cellValueFound)
+					result = res.data.result
 				}
 			})
 		}
@@ -82,7 +82,7 @@
 		switch (cellValueFound) {
 			case "none": res = ""; break;
 			case "x": res = "url("+devUrl+"img/cross.png)"; break;
-			case "y": res = "url("+devUrl+"img/circle.png)"; break;
+			case "o": res = "url("+devUrl+"img/circle.png)"; break;
 		}
 
 		return res
@@ -92,14 +92,25 @@
 		document.querySelector(selector).style.display = visible ? 'block' : 'none';
 	}
 
-	let result = ""
-
 	function onReady(callback) {
 		instance.get('/board').then(res => {
 			const boardValues = new Map(Object.entries(res.data.board))
 			getBoard(boardValues)
+			document.getElementById("reset").addEventListener("click", resetHandler())
+			result = res.data.result
 			setTimeout(callback.call(this), 1000)
 		})
+	}
+
+	function resetHandler() {
+		return () => {
+			instance.get("/board/clear").then(res => {
+				let board = document.getElementById("board")
+				board.innerHTML = ""
+				const boardValues = new Map(Object.entries(res.data.board))
+				getBoard(boardValues)
+			})
+		}
 	}
 
 	onReady(function() {
@@ -114,8 +125,8 @@
 		<div class="wrapper">
 			<div id="board" class="board"></div>
 		</div>
-		<div class="reset"> Заново </div>
-		<div class="result"> { result } </div>
+		<div id="reset" class="reset"> Заново </div>
+		<div id="result" class="result"> { result } </div>
 	</div>
 
 	<div id="loading"></div>
