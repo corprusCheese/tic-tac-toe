@@ -57,13 +57,13 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
              board = state._1
              turn = state._2
              //Ok(getJsonBoardOnlyAsResponse(board))
+             if (result.isEmpty)
+               result = logicService.getResultFromBoard(board, turn)
              Ok(
                getJsonAsResponse(
                  board,
                  turn,
-                 if (result.isEmpty)
-                   logicService.getResultFromBoard(board, turn)
-                 else result
+                 result
                )
              )
            }
