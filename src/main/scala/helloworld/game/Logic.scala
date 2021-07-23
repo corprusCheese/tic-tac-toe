@@ -2,6 +2,7 @@ package helloworld.game
 
 import Logic._
 import cats.effect.{Blocker, ContextShift, IO, Timer}
+import helloworld.game.Game.count
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}
 
@@ -30,13 +31,13 @@ object Logic {
   implicit def dimension2int(dim: Dimension): Int = dim.v
   implicit def int2dimension(v: Int): Dimension   = Dimension(if (v < 1) 1 else v)
 
-  implicit val encodeRequest: Encoder[Position] = (a: Position) =>
+  implicit val encodePosition: Encoder[Position] = (a: Position) =>
     Json.obj(
       ("x", Json.fromInt(a.x)),
       ("y", Json.fromInt(a.y))
     )
 
-  implicit val decodeRequest: Decoder[Position] = (c: HCursor) => {
+  implicit val decodePosition: Decoder[Position] = (c: HCursor) => {
     for {
       x <- c.downField("x").as[Int]
       y <- c.downField("y").as[Int]
@@ -126,4 +127,8 @@ class Logic {
     } else {
       (board, turn)
     }
+
+  def saveBoardToElastic(board: Board): Boolean = {
+    true
+  }
 }

@@ -1,5 +1,6 @@
 package helloworld.api.services
 
+import com.sksamuel.elastic4s.ElasticDsl._
 import cats.{Monad, MonadThrow}
 import cats.effect.{Concurrent, ContextShift, Timer}
 import cats.implicits._
@@ -12,6 +13,7 @@ import io.circe.syntax.EncoderOps
 import org.http4s.HttpRoutes
 import org.http4s.circe.{jsonDecoder, jsonEncoder}
 import org.http4s.dsl.Http4sDsl
+import io.circe.generic.auto._
 
 class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
 
@@ -68,6 +70,9 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
              )
            }
          }
+    case req @ post -> Root / "board"/ "save" =>
+      logicService.saveBoardToElastic(board)
+      Ok("saved!")
   }
 
   override def getInstance(): HttpRoutes[F] = gameService

@@ -140,6 +140,10 @@
 			}).then((result) => {
 				if (result.isConfirmed) {
 					console.log("confirmed")
+					instance.post("/board/save").then(result => {
+						if (result.code === 200)
+							console.log("success")
+					})
 				} else {
 					console.log("cancelled")
 				}

@@ -11,6 +11,9 @@ val catsEffectVersion = "2.5.1"
 val catsCoreVersion = "2.3.0"
 val newTypeVersion = "0.4.4"
 val logBackVersion = "1.1.3"
+val elastic4sVersion = "7.12.3"
+val fs2core = "2.2.2"
+val catsEffectStd = "3.1.1"
 
 
 libraryDependencies ++= Seq(
@@ -22,12 +25,14 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-literal" % circeVersion,
   "io.circe" %% "circe-parser" % circeVersion,
   "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
-  "co.fs2"           %% "fs2-core"      % "2.2.2",
-  "org.typelevel" %% "cats-effect-std" %  "3.1.1",
+  "co.fs2"           %% "fs2-core"      % fs2core,
+  "org.typelevel" %% "cats-effect-std" %  catsEffectStd,
   "org.typelevel" %% "cats-effect" % catsEffectVersion,
   "org.typelevel" %% "cats-core" % catsCoreVersion,
   "io.estatico" %% "newtype" % newTypeVersion,
-  "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime
+  "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime,
+  "com.sksamuel.elastic4s" %% "elastic4s-client-esjava" % elastic4sVersion,
+  "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elastic4sVersion % "test"
 )
 
 enablePlugins(JavaAppPackaging)
