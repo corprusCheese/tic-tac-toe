@@ -18,10 +18,17 @@ class FileService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDs
       .fromResource("/front/public/build/" + file, blocker, Some(request))
       .getOrElseF(NotFound())
 
+  private def staticImg(file: String, blocker: Blocker, request: Request[F]): F[Response[F]] =
+    StaticFile
+      .fromResource("/front/public/img/" + file, blocker, Some(request))
+      .getOrElseF(NotFound())
+
   private val fileService: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> Root / path if List(".js", ".css", ".html", ".ico").exists(path.endsWith) =>
       static(path, blocker, req)
     case req @ GET -> Root / "build" / path if List(".js", ".css", ".ico").exists(path.endsWith) =>
+      staticBuild(path, blocker, req)
+    case req @ GET -> Root / "img" / path if List(".png", ".jpeg", ".jpg").exists(path.endsWith) =>
       staticBuild(path, blocker, req)
     case req @ GET -> Root / "global.css" =>
       StaticFile

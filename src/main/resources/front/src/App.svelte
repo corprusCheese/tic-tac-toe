@@ -27,6 +27,10 @@
 		})
 	}
 
+	function getCellValueFromResponse(boardValues, i, j) {
+
+	}
+
 	function getItem(item, rowIndex, index) {
 		let mark = ""
 		switch (item) {
@@ -46,31 +50,77 @@
 		cell.setAttribute("class", 'ceil')
 		cell.setAttribute("data-i", rowIndex)
 		cell.setAttribute("data-j", index)
-		cell.addEventListener("click", clickHandler(rowIndex, index, null));
+		cell.addEventListener("click", clickHandler(cell, rowIndex, index));
 
 		cell.innerHTML = html
 
 		return cell
 	}
 
-	function clickHandler(i, j) {
+	function clickHandler(cell, i, j) {
 		return () => {
 			console.log(i+", "+j)
+			instance({
+				method: "post",
+				url: "/board",
+				data: {
+					x: j,
+					y: i
+				}
+			}).then((res) => {
+				console.log(res)
+				if (res.status === 200) {
+					const boardValues = new Map(Object.entries(res.data.board))
+					const rowValuesFound = new Map(Object.entries(boardValues.get(i.toString())))
+					const cellValueFound = rowValuesFound.get(j.toString())
+					console.log(cellValueFound)
+
+					cell.style.backgroundImage = setMark(cellValueFound)
+				}
+			})
 		}
 	}
 
-	let result = ""
-	instance.get('/board').then(res => {
-		const boardValues = new Map(Object.entries(res.data.board))
-		getBoard(boardValues)
-	})
+	function setMark(cellValueFound) {
+		let res = ""
+		switch (cellValueFound) {
+			case "none": res = ""; break;
+			case "x": res = "img/red-cross.jpg"; break;
+			case "y": res = "img/green-circle.jpg"; break;
+		}
 
+		return res
+	}
+
+	function setVisible(selector, visible) {
+		document.querySelector(selector).style.display = visible ? 'block' : 'none';
+	}
+
+	let result = ""
+
+	function onReady(callback) {
+		instance.get('/board').then(res => {
+			const boardValues = new Map(Object.entries(res.data.board))
+			getBoard(boardValues)
+			setTimeout(callback.call(this), 1000)
+		})
+	}
+
+	onReady(function() {
+		setVisible('.main', true);
+		setVisible('.reset', true);
+		setVisible('#loading', false);
+	});
 </script>
 
 <main>
-	<div class="wrapper">
-		<div id="board" class="board"></div>
+	<div class="main">
+		<div class="wrapper">
+			<div id="board" class="board"></div>
+		</div>
+		<div class="reset"> Заново </div>
+		<div class="result"> { result } </div>
 	</div>
-	<div class="reset"> Заново </div>
-	<div class="result"> { result } </div>
+
+	<div id="loading"></div>
 </main>

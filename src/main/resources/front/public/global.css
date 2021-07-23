@@ -24,9 +24,28 @@
 
 .reset {
 	border: 1px gray solid;
+	border-radius: 5px;
 	cursor: pointer;
 }
 
 html, body, main {
 	height: 100%;
+}
+
+#loading {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 100;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(192, 192, 192, 0.5);
+	background-image: url("https://i.stack.imgur.com/MnyxU.gif");
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.main, .reset {
+	display: none
 }
