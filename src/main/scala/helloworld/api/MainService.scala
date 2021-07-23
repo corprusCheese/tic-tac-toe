@@ -33,7 +33,7 @@ object MainService {
       "/chat" -> CORS(chatService.getInstance(), methodConfig),
       "/" -> CORS(wsService.getInstance(), methodConfig),
       "/" -> CORS(fileService.getInstance(), methodConfig),
-      "/" -> CORS(HttpService.create[IO]().getInstance(), methodConfig)
+      "/" -> CORS(new HttpService[IO].getInstance(), methodConfig)
     ).orNotFound
 
   }

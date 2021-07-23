@@ -79,7 +79,7 @@ class Logic {
   }
 
   def getResultFromRows(board: Board): Boolean = {
-    (0 until board.size toList).map(x=>isRowHaveOneMark(board(x))).reduce((x, y)=> x || y)
+    (board.indices toList).map(x=>isRowHaveOneMark(board(x))).reduce((x, y)=> x || y)
   }
 
   def getResultFromDiagonals(board: Board): Boolean = {
