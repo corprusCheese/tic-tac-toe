@@ -1,5 +1,6 @@
 <script>
 	import axios from "axios";
+	import Swal from 'sweetalert2'
 
 	const devUrl = "https://peaceful-depths-92861.herokuapp.com/"
 
@@ -72,7 +73,7 @@
 
 					cell.style.backgroundImage = setMark(cellValueFound)
 
-					result = getResult(res.data.result)
+					result = getResult(result, res.data.result)
 				}
 			})
 		}
@@ -103,15 +104,46 @@
 		})
 	}
 
-	function getResult(dataResult) {
+	function getResult(currentResult, dataResult) {
 		let res = ""
-		switch (dataResult) {
-			case "none": break;
-			case "circle wins": res = "Circle Wins!"; break;
-			case "cross wins": res = "Cross Wins!"; break;
+		if (currentResult) {
+			res = currentResult
+		} else {
+			switch (dataResult) {
+				default:
+					break;
+				case "none":
+					break;
+				case "circle wins":
+					res = "Circle Wins!";
+					break;
+				case "cross wins":
+					res = "Cross Wins!";
+					break;
+			}
+
+			showWindow(res)
 		}
 
 		return res
+	}
+
+	function showWindow(res) {
+		if (res !== "")
+			Swal.fire({
+				title: res,
+				text: "You can save result to server if you want",
+				showCloseButton: true,
+				showCancelButton: true,
+				confirmButtonText: "Do it!",
+				cancelButtonText: "No.."
+			}).then((result) => {
+				if (result.isConfirmed) {
+					console.log("confirmed")
+				} else {
+					console.log("cancelled")
+				}
+			})
 	}
 
 	function resetHandler() {
