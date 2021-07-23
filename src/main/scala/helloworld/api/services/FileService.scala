@@ -29,7 +29,7 @@ class FileService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDs
     case req @ GET -> Root / "build" / path if List(".js", ".css", ".ico").exists(path.endsWith) =>
       staticBuild(path, blocker, req)
     case req @ GET -> Root / "img" / path if List(".png", ".jpeg", ".jpg").exists(path.endsWith) =>
-      staticBuild(path, blocker, req)
+      staticImg(path, blocker, req)
     case req @ GET -> Root / "global.css" =>
       StaticFile
         .fromResource("/front/public/build/global.css", blocker, Some(req))
