@@ -71,7 +71,8 @@
 					const cellValueFound = rowValuesFound.get(j.toString())
 
 					cell.style.backgroundImage = setMark(cellValueFound)
-					result = res.data.result
+
+					result = getResult(res.data.result)
 				}
 			})
 		}
@@ -93,13 +94,24 @@
 	}
 
 	function onReady(callback) {
-		instance.get('/board').then(res => {
+		instance.get('/board/clear').then(res => {
 			const boardValues = new Map(Object.entries(res.data.board))
 			getBoard(boardValues)
 			document.getElementById("reset").addEventListener("click", resetHandler())
-			result = res.data.result
+			result = ""
 			setTimeout(callback.call(this), 1000)
 		})
+	}
+
+	function getResult(dataResult) {
+		let res = ""
+		switch (dataResult) {
+			case "none": break;
+			case "circle wins": res = "Circle Wins!"; break;
+			case "cross wins": res = "Cross Wins!"; break;
+		}
+
+		return res
 	}
 
 	function resetHandler() {
@@ -109,23 +121,24 @@
 				board.innerHTML = ""
 				const boardValues = new Map(Object.entries(res.data.board))
 				getBoard(boardValues)
+				result = ""
 			})
 		}
 	}
 
 	onReady(function() {
 		setVisible('.main', true);
-		setVisible('.reset', true);
+		setVisible('#reset', true);
 		setVisible('#loading', false);
 	});
 </script>
 
 <main>
-	<div class="main">
+	<div class="main center">
 		<div class="wrapper">
 			<div id="board" class="board"></div>
 		</div>
-		<div id="reset" class="reset"> Заново </div>
+		<div id="reset" class="reset"> New Game </div>
 		<div id="result" class="result"> { result } </div>
 	</div>
 
