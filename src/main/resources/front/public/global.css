@@ -3,6 +3,7 @@
 	display: inline-block;
 	width:5vw;
 	height:5vw;
+	background-size: contain;
 }
 
 .row-wrapper {

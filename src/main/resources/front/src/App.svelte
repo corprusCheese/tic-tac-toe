@@ -27,10 +27,6 @@
 		})
 	}
 
-	function getCellValueFromResponse(boardValues, i, j) {
-
-	}
-
 	function getItem(item, rowIndex, index) {
 		let mark = ""
 		switch (item) {
@@ -85,8 +81,8 @@
 		let res = ""
 		switch (cellValueFound) {
 			case "none": res = ""; break;
-			case "x": res = "img/red-cross.jpg"; break;
-			case "y": res = "img/green-circle.jpg"; break;
+			case "x": res = "url("+devUrl+"img/cross.png)"; break;
+			case "y": res = "url("+devUrl+"img/circle.png)"; break;
 		}
 
 		return res
