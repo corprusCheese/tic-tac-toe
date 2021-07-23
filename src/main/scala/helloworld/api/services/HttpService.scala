@@ -61,7 +61,9 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
                getJsonAsResponse(
                  board,
                  turn,
-                 result
+                 if (result.isEmpty)
+                   logicService.getResultFromBoard(board, turn)
+                 else result
                )
              )
            }
