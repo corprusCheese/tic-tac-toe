@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 
 object MainService {
 
-  val methodConfig = CORSConfig(
+  val methodConfig: CORSConfig = CORSConfig(
     anyOrigin = true,
     anyMethod = true,
     allowCredentials = true,
@@ -33,7 +33,7 @@ object MainService {
       "/chat" -> CORS(chatService.getInstance(), methodConfig),
       "/" -> CORS(wsService.getInstance(), methodConfig),
       "/" -> CORS(fileService.getInstance(), methodConfig),
-      "/" -> httpService.getInstance()
+      "/" -> CORS(httpService.getInstance(), methodConfig)
     ).orNotFound
 
   }
