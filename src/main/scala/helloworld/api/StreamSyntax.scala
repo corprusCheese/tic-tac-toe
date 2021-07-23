@@ -1,4 +1,4 @@
-package helloworld.HttpService
+package helloworld.api
 
 import cats.implicits._
 import fs2.concurrent.Queue

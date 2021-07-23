@@ -1,4 +1,4 @@
-package helloworld.HttpService.WebServices
+package helloworld.api.services
 
 import cats._
 import cats.data.Ior
@@ -6,7 +6,7 @@ import cats.effect.concurrent._
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import fs2.concurrent._
-import helloworld.HttpService.WebServices.ChatService._
+import helloworld.api.services.ChatService._
 import io.circe.parser._
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}

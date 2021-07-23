@@ -1,17 +1,27 @@
-package helloworld.HttpService
+package helloworld.api
 
 import cats.data.Kleisli
 import cats.effect.{ContextShift, IO, Timer}
 import helloworld.game.Logic._
-import helloworld.HttpService.WebServices.{ChatService, FileService, HttpService, WsService}
+import helloworld.api.services.{ChatService, FileService, HttpService, WsService}
 import helloworld.Main.{contextShift, timer}
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.Router
 import org.http4s.{Request, Response}
-
-import scala.concurrent.ExecutionContext
+import org.http4s.server.middleware._
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object MainService {
+
+  val methodConfig = CORSConfig(
+    anyOrigin = true,
+    anyMethod = false,
+    allowedMethods = Some(Set("GET", "POST")),
+    allowCredentials = true,
+    maxAge = 1.day.toSeconds
+  )
+
   val api: IO[Kleisli[IO, Request[IO], Response[IO]]] = {
     implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
     implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
@@ -21,10 +31,10 @@ object MainService {
       fileService <- FileService.apply[IO]()
       httpService <- HttpService.apply[IO]()
     } yield Router(
-      "/chat" -> chatService.getInstance(),
-      "/" -> wsService.getInstance(),
-      "/" -> fileService.getInstance(),
-      "/" -> httpService.getInstance()
+      "/chat" -> CORS(chatService.getInstance(), methodConfig),
+      "/" -> CORS(wsService.getInstance(), methodConfig),
+      "/" -> CORS(fileService.getInstance(), methodConfig),
+      "/" -> CORS(httpService.getInstance(), methodConfig)
     ).orNotFound
 
   }

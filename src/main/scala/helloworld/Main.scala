@@ -3,7 +3,7 @@ package helloworld
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.server.blaze.BlazeServerBuilder
 import cats.implicits._
-import helloworld.HttpService.MainService
+import helloworld.api.MainService
 
 import scala.concurrent.ExecutionContext
 

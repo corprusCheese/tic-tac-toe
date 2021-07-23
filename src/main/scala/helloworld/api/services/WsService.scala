@@ -1,4 +1,4 @@
-package helloworld.HttpService.WebServices
+package helloworld.api.services
 
 import cats.{Monad, MonadThrow}
 import cats.effect.{Concurrent, ContextShift, Sync, Timer}

@@ -1,14 +1,13 @@
 package helloworld.game
 
 import Logic._
-
 import cats.effect.{Blocker, ContextShift, IO, Timer}
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
-import scala.language.implicitConversions
+import scala.language.{implicitConversions, postfixOps}
 
 object Logic {
   sealed trait Mark
@@ -74,22 +73,19 @@ class Logic {
   def isFull(board: Board): Boolean =
     !board.flatten.contains(None)
 
-  // todo: rewrite it in functional style
   def isSomeoneWin(board: Board): Boolean = {
-    val boardT: Board                     = board.transpose
-    var result                            = false
-    var listDiagonal1: List[Option[Mark]] = List()
-    var listDiagonal2: List[Option[Mark]] = List()
-    val count                             = board.size
+    getResultFromDiagonals(board) || getResultFromRows(board) || getResultFromRows(board.transpose)
+  }
 
-    for (i <- 0 until count) {
-      result = result || isRowHaveOneMark(board(i)) || isRowHaveOneMark(boardT(i))
+  def getResultFromRows(board: Board): Boolean = {
+    (0 to board.size toList).map(x=>isRowHaveOneMark(board(x))).reduce((x, y)=> x || y)
+  }
 
-      listDiagonal1 = listDiagonal1 :+ board(i)(i)
-      listDiagonal2 = listDiagonal2 :+ board(count - 1 - i)(i)
-    }
+  def getResultFromDiagonals(board: Board): Boolean = {
+    val listDiagonal1: List[Option[Mark]] = List.range(0, board.size).map(x=>board(x)(x))
+    val listDiagonal2: List[Option[Mark]] = List.range(0, board.size).map(x=>board(board.size - x - 1)(x))
 
-    result || isRowHaveOneMark(listDiagonal1) || isRowHaveOneMark(listDiagonal2)
+    isRowHaveOneMark(listDiagonal1) || isRowHaveOneMark(listDiagonal2)
   }
 
   def getResultFromBoard(board: Board, turn: Mark): Option[Result] = {

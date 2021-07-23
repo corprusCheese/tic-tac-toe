@@ -1,6 +1,12 @@
 <script>
 	import axios from "axios";
 
+	const devUrl = "https://peaceful-depths-92861.herokuapp.com/"
+
+	const instance = axios.create({
+  		baseURL: devUrl
+	});
+
 	function rowWrapper() {
 		let row = document.createElement("div")
 		row.setAttribute("class", 'row-wrapper')
@@ -53,9 +59,8 @@
 		}
 	}
 
-
 	let result = ""
-	axios.get('/board').then(res => {
+	instance.get('/board').then(res => {
 		const boardValues = new Map(Object.entries(res.data.board))
 		getBoard(boardValues)
 	})
