@@ -16,8 +16,7 @@ object MainService {
 
   val methodConfig = CORSConfig(
     anyOrigin = true,
-    anyMethod = false,
-    allowedMethods = Some(Set("GET", "POST")),
+    anyMethod = true,
     allowCredentials = true,
     maxAge = 1.day.toSeconds
   )
@@ -34,7 +33,7 @@ object MainService {
       "/chat" -> CORS(chatService.getInstance(), methodConfig),
       "/" -> CORS(wsService.getInstance(), methodConfig),
       "/" -> CORS(fileService.getInstance(), methodConfig),
-      "/" -> CORS(httpService.getInstance(), methodConfig)
+      "/" -> httpService.getInstance()
     ).orNotFound
 
   }
