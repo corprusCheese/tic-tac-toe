@@ -13,6 +13,7 @@ import tictactoe.api.DataBootstrapper.{CustomRandom, GameMap, gameMap}
 import tictactoe.api.game.{DataHandler, Logic}
 import tictactoe.api.game.Game
 import core.DataEntities._
+import tictactoe.api.MainService.logManager
 
 class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
 
@@ -79,7 +80,9 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
     case req @ post -> Root / "board"/ gameId / "save" =>
       gameMap.getGame(gameId) match {
         case Some(game) =>
+          logManager.insertLog(game.getJson)
           Ok("saved!")
+        case _ => NotFound("error")
       }
   }
 

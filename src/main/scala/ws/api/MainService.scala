@@ -1,5 +1,6 @@
 package ws.api
 
+import cats.Id
 import cats.data.Kleisli
 import cats.effect.{ContextShift, IO, Timer}
 import core.settings.ServiceSettings
@@ -11,6 +12,7 @@ import org.http4s.server.Router
 import org.http4s.{Request, Response}
 import org.http4s.server.middleware._
 import tictactoe.api.services.HttpService
+import tictactoe.logs.LogManager
 
 import scala.concurrent._
 import scala.concurrent.duration._

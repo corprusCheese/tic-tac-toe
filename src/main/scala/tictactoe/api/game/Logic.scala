@@ -1,7 +1,10 @@
 package tictactoe.api.game
 
-import cats.implicits.catsSyntaxOptionId
+import cats.implicits._
 import core.DataEntities._
+import io.circe.Json
+import tictactoe.api.MainService.logManager
+import tictactoe.logs.LogManager
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -11,15 +14,6 @@ object Logic {
     List(None, None, None),
     List(None, None, None)
   )
-
-  def initBoardOfDim(dim: Dimension): Board = {
-    var board: Board = List()
-    for (_ <- 0 until dim) {
-      board = board :+ List.fill(dim)(None)
-    }
-
-    board
-  }
 
   def isRowHaveOneMark(list: List[Option[Mark]]): Boolean =
     list.distinct.size == 1 && list.head.isDefined
@@ -77,8 +71,4 @@ object Logic {
     if (game.board(position.x)(position.y).isEmpty)
       postMarkToBoard(game, position)
     else game
-
-  def saveBoardToElastic(board: Board): Boolean = {
-    true
-  }
 }

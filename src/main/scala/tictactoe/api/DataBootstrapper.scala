@@ -30,7 +30,7 @@ object DataBootstrapper {
       map.get(id)
 
     def clearGame(id: GameId): Game = {
-      val newGame: Game = new Game()
+      val newGame: Game = Game()
       map.update(id, newGame)
       newGame
     }
