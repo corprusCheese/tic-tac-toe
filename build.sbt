@@ -1,4 +1,4 @@
-name := "helloworld"
+//name := "ws"
 
 version := "0.1"
 
@@ -14,6 +14,7 @@ val logBackVersion = "1.1.3"
 val elastic4sVersion = "7.12.3"
 val fs2core = "2.2.2"
 val catsEffectStd = "3.1.1"
+val doobieVersion = "0.12.1"
 
 
 libraryDependencies ++= Seq(
@@ -31,8 +32,8 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsCoreVersion,
   "io.estatico" %% "newtype" % newTypeVersion,
   "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime,
-  "com.sksamuel.elastic4s" %% "elastic4s-client-esjava" % elastic4sVersion,
-  "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elastic4sVersion % "test"
+  "org.tpolecat" %% "doobie-core"      % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres"  % doobieVersion,
 )
 
 enablePlugins(JavaAppPackaging)

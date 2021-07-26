@@ -1,4 +1,4 @@
-package helloworld.api.services
+package ws.api.services
 
 import cats._
 import cats.data.Ior
@@ -6,12 +6,12 @@ import cats.effect.concurrent._
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import fs2.concurrent._
-import helloworld.api.services.ChatService._
+import ws.api.services.ChatService._
 import io.circe.parser._
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import fs2.{Stream, _}
-import helloworld.algebra.AbstractService
+import core.algebra.AbstractService
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.websocket.WebSocketBuilder

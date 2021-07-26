@@ -1,8 +1,9 @@
-package helloworld.game
+package tictactoe.api.game
 
-import Logic._
+import core.DataEntities._
 
-object DataGameHandler {
+object DataHandler {
+
   def getBoardAsMap(board: Board): Map[Int, Map[Int, String]] =
     board
       .map(x => x.map(y => getResponseFromMark(y)))
@@ -11,6 +12,7 @@ object DataGameHandler {
       .zipWithIndex
       .map { case (v, i) => (i, v) }
       .toMap
+
   def getMarkFromRequest(str: String): Mark =
     str match {
       case "x" => Cross

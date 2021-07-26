@@ -1,10 +1,3 @@
-package helloworld
-
-import helloworld.api.services.HttpService._
-
-import helloworld.game.Game._
-import helloworld.api.Game.Logic.{cs, _}
-
 import org.scalatest.FlatSpec
 
 class HttpServiceTest extends FlatSpec {
