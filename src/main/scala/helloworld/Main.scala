@@ -20,7 +20,6 @@ object Main extends IOApp {
         BlazeServerBuilder[IO](ExecutionContext.global)
           .bindHttp(props._1, props._2)
           .withHttpApp(api)
-          .withHttpApp(MainHttpService.api)
           .serve
           .compile
           .drain

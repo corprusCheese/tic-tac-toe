@@ -25,7 +25,8 @@ object MainWsService {
     } yield Router(
       "/chat" -> CORS(chatService.getInstance(), ServiceSettings.methodConfig),
       "/" -> CORS(wsService.getInstance(), ServiceSettings.methodConfig),
-      "/" -> CORS(fileService.getInstance(), ServiceSettings.methodConfig)
+      "/" -> CORS(fileService.getInstance(), ServiceSettings.methodConfig),
+      "/" -> CORS(new HttpService[IO].getInstance())
     ).orNotFound
   }
 }
