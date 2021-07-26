@@ -3,7 +3,7 @@ package helloworld
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.server.blaze.BlazeServerBuilder
 import cats.implicits._
-import helloworld.api.MainWsService
+import helloworld.api.{MainHttpService, MainWsService}
 
 import scala.concurrent.ExecutionContext
 
@@ -20,7 +20,7 @@ object Main extends IOApp {
         BlazeServerBuilder[IO](ExecutionContext.global)
           .bindHttp(props._1, props._2)
           .withHttpApp(api)
-          .withHttpApp()
+          .withHttpApp(MainHttpService.api)
           .serve
           .compile
           .drain
