@@ -80,7 +80,7 @@ class HttpService [F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sD
     case req @ post -> Root / "board"/ gameId / "save" =>
       gameMap.getGame(gameId) match {
         case Some(game) =>
-          logManager.insertLog(game.getJson)
+          logManager.insertLog(game.getJson).unsafeRunSync()
           Ok("saved!")
         case _ => NotFound("error")
       }
