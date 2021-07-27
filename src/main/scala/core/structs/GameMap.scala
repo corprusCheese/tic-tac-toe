@@ -8,33 +8,26 @@ import tictactoe.api.game.{Game, Logic}
 
 import scala.collection.mutable
 
-class GameMap {
-  private val map: mutable.Map[String, Game] = mutable.Map.empty
+class GameMap[F[_]: Sync] {
+  private val map: mutable.Map[String, Game[F]] = mutable.Map.empty
 
   type GameId = String
 
-  def addGame(id: GameId, game: Game): Unit =
+  def addGame(id: GameId, game: Game[F]): Unit =
     map += (id -> game)
 
   def removeGame(id: GameId): Unit =
     map -= id
 
-  def updateGame(id: GameId, game: Game): Unit =
+  def updateGame(id: GameId, game: Game[F]): Unit =
     map.update(id, game)
 
-  def getGame(id: GameId): Option[Game] =
+  def getGame(id: GameId): Option[Game[F]] =
     map.get(id)
 
-  def clearGame(id: GameId): Game = {
-    val newGame: Game = Game()
+  def clearGame(id: GameId): Game[F] = {
+    val newGame: Game[F] = Game[F](3)
     map.update(id, newGame)
     newGame
   }
-
-  def postNewMark(id: GameId, pos: Position): Option[Game] =
-    getGame(id) match {
-      case Some(game) =>
-        Logic.addMark(game, pos).some
-      case None => None
-    }
 }
