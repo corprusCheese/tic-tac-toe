@@ -9,7 +9,9 @@ import org.http4s.{HttpRoutes, Request, Response, StaticFile}
 
 import java.util.concurrent.{ExecutorService, Executors}
 
-class FileService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
+class FileService[F[_]: Monad: Timer: Concurrent: ContextShift]
+    extends Http4sDsl[F]
+    with AbstractService[F] {
 
   val blockingPool: ExecutorService = Executors.newFixedThreadPool(4)
   val blocker: Blocker              = Blocker.liftExecutorService(blockingPool)

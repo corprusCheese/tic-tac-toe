@@ -22,7 +22,8 @@ import scala.concurrent.duration.DurationInt
 import scala.language.implicitConversions
 
 class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, IorUserList[F]])
-    extends Http4sDsl[F] with AbstractService[F] {
+    extends Http4sDsl[F]
+    with AbstractService[F] {
   private val chatService: HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "start" =>
       def targetMarkMessage(): String        = "(You):"
@@ -379,10 +380,10 @@ object ChatService {
   }
 
   implicit val encodeChatResponse: Encoder[ChatResponse] = {
-    case m: PublicMessage => encodePublicMessage(m)
+    case m: PublicMessage  => encodePublicMessage(m)
     case m: PrivateMessage => encodePrivateMessage(m)
-    case m: ErrorResponse => encodeErrorResponse(m)
-    case m: MessageToMe => encodeMessageToMe(m)
+    case m: ErrorResponse  => encodeErrorResponse(m)
+    case m: MessageToMe    => encodeMessageToMe(m)
   }
 
   implicit val encodePublicMessage: Encoder[PublicMessage] = (a: PublicMessage) =>

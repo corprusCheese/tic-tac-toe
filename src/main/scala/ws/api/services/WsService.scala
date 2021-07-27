@@ -14,7 +14,9 @@ import org.http4s.{HttpRoutes, Response}
 
 import scala.concurrent.duration.DurationInt
 
-class WsService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[F] with AbstractService[F] {
+class WsService[F[_]: Monad: Timer: Concurrent: ContextShift]
+    extends Http4sDsl[F]
+    with AbstractService[F] {
 
   private val socketService: HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "begin" => begin()
@@ -44,8 +46,7 @@ class WsService[F[_]: Monad: Timer: Concurrent: ContextShift] extends Http4sDsl[
       (toClient, fromClient)
     }
 
-    val buildSocket
-      : (Stream[F, WebSocketFrame], Pipe[F, WebSocketFrame, Unit]) => F[Response[F]] =
+    val buildSocket: (Stream[F, WebSocketFrame], Pipe[F, WebSocketFrame, Unit]) => F[Response[F]] =
       (to, from) => WebSocketBuilder[F].build(to, from)
 
     qio.map(buildStreams).flatMap(buildSocket.tupled)

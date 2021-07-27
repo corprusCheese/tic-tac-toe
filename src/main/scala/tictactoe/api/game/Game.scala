@@ -8,12 +8,11 @@ import cats.implicits._
 import io.circe.syntax.EncoderOps
 
 case class Game() {
-  def getJson: Json = {
+  def getJson: Json =
     Json.obj(
-      "board" -> board.asJson,
+      "board"  -> board.asJson,
       "result" -> DataHandler.getResultToString(result).asJson
     )
-  }
 
   def initState(): (Board, Mark, Option[Result]) = {
     board = initBoard()
@@ -24,5 +23,5 @@ case class Game() {
 
   // TODO: var to val REF
   var (board, turn, result) = initState()
-  val count: Dimension = 3
+  val count: Dimension      = 3
 }
