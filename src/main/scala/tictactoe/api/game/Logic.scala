@@ -7,12 +7,6 @@ import core.DataEntities._
 import scala.language.{implicitConversions, postfixOps}
 
 object Logic {
-  def initBoard(): Board = List(
-    List(None, None, None),
-    List(None, None, None),
-    List(None, None, None)
-  )
-
   def isRowHaveOneMark(list: List[Option[Mark]]): Boolean =
     list.distinct.size == 1 && list.head.isDefined
 

@@ -61,7 +61,7 @@ case class Game[F[_]: Sync](
       b(position.x)(position.y) match {
         case None =>
           turn.get.flatMap(t =>
-            updateBoard(setPositionToBoard(b, position, t)) >>
+            updateBoard(Game.setPositionToBoard(b, position, t)) >>
               updateTurn() >>
               updateResult()
           )
@@ -69,14 +69,6 @@ case class Game[F[_]: Sync](
     ).flatMap(x => x).flatMap { _ =>
       this.asInstanceOf[Game[F]].pure[F]
     }
-
-  def setPositionToBoard(board: Board, position: Position, mark: Mark): Board =
-    board.iterator.zipWithIndex.map {
-      case (row, i) =>
-        row.iterator.zipWithIndex.map {
-          case (cell, j) => if (i == position.x && j == position.y) mark.some else cell
-        }.toList
-    }.toList
 
   def addMark(position: Position): F[Game[F]] =
     getBoard { b =>
@@ -88,6 +80,20 @@ case class Game[F[_]: Sync](
 }
 
 object Game {
+  def initBoard(): Board = List(
+    List(None, None, None),
+    List(None, None, None),
+    List(None, None, None)
+  )
+
+  def setPositionToBoard(board: Board, position: Position, mark: Mark): Board =
+    board.iterator.zipWithIndex.map {
+      case (row, i) =>
+        row.iterator.zipWithIndex.map {
+          case (cell, j) => if (i == position.x && j == position.y) mark.some else cell
+        }.toList
+    }.toList
+
   def apply[F[_]: Sync](dimension: Dimension): F[Game[F]] =
     (Ref[F].of[Board](initBoard()), Ref[F].of[Mark](Cross), Ref[F].of[Option[Result]](none[Result]))
       .mapN((board, turn, result) => new Game(board, turn, result, dimension))
