@@ -53,23 +53,30 @@ case class Game[F[_]: Sync](
   def updateTurn(): F[Mark] =
     turn.updateAndGet(Logic.getNextTurn)
 
+  def updateResult(): F[Option[Result]] =
+    Logic.getResultFromGame(this).flatMap(res => result.updateAndGet(_ => res))
+
   def postMarkToBoard(position: Position): F[Game[F]] =
     getBoard(b =>
       b(position.x)(position.y) match {
         case None =>
-          updateBoard(setPositionToBoard(b, position, Cross))
+          turn.get.flatMap(t =>
+            updateBoard(setPositionToBoard(b, position, t)) >>
+              updateTurn() >>
+              updateResult()
+          )
       }
-    ).flatMap(x => x).flatMap(_ => {
+    ).flatMap(x => x).flatMap { _ =>
       this.asInstanceOf[Game[F]].pure[F]
-    })
+    }
 
-  def setPositionToBoard(board: Board, position: Position, mark: Mark): Board = {
-    board.iterator.zipWithIndex.map{
-      case (row, i) => row.iterator.zipWithIndex.map{
-        case (cell, j) => if (i == position.x && j == position.y) mark.some else cell
-      }.toList
+  def setPositionToBoard(board: Board, position: Position, mark: Mark): Board =
+    board.iterator.zipWithIndex.map {
+      case (row, i) =>
+        row.iterator.zipWithIndex.map {
+          case (cell, j) => if (i == position.x && j == position.y) mark.some else cell
+        }.toList
     }.toList
-  }
 
   def addMark(position: Position): F[Game[F]] =
     getBoard { b =>
