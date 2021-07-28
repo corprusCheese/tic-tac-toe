@@ -14,7 +14,7 @@ import tictactoe.api.game.Game
 import core.DataEntities._
 import core.structs.{CustomRandom, GameMap}
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
-import tictactoe.api.MainService.{logManager}
+import tictactoe.api.MainService._
 
 class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
     extends Http4sDsl[F]
@@ -28,8 +28,8 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
     case GET -> Root / "board" / "new" =>
       Game[F](3).flatMap { game =>
         val generatedId: gameMap.GameId = CustomRandom.generateGameId(gameMap)
-        gameMap.addGame(generatedId, game)
-        game.getJson(generatedId, "Game created").flatMap(json => Ok(json))
+        gameMap.addGame(generatedId, game).pure[F] >>
+          game.getJson(generatedId, "Game created").flatMap(json => Ok(json))
       }
 
     /** get current state of game in map */
@@ -56,9 +56,8 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
             gameMap.getGame(gameId) match {
               case Some(game) =>
                 println("posted")
-                Logic.addMark(game, position).flatMap { x =>
-                  println("posted 2")
-                  game.getJson(gameId, "Mark has been posted").flatMap(json => Ok(json))
+                game.addMark(position).flatMap { x =>
+                  x.getJson(gameId, "Mark has been posted").flatMap(json => Ok(json))
                 }
               case None =>
                 NotFound("Game is not exist")

@@ -4,7 +4,6 @@ import cats.effect.Sync
 import cats.implicits._
 import core.DataEntities._
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.language.{implicitConversions, postfixOps}
 
 object Logic {
@@ -33,7 +32,7 @@ object Logic {
     isRowHaveOneMark(listDiagonal1) || isRowHaveOneMark(listDiagonal2)
   }
 
-  def getResultFromBoard[F[_]: Sync](game: Game[F]): F[Option[Result]] =
+  def getResultFromGame[F[_]: Sync](game: Game[F]): F[Option[Result]] =
     game
       .getBoard { b =>
         if (isSomeoneWin(b))
@@ -49,49 +48,9 @@ object Logic {
       }
       .flatMap(x => x)
 
-  def setPositionToBoard(board: Board, position: Position, mark: Mark): Board = {
-    val incRow = new AtomicInteger(0)
-    board.map { row =>
-      val incCell = new AtomicInteger(0)
-      val newRow = row.map { cell =>
-        val newCell =
-          if (position.x == incCell.get() && position.y == incRow.get()) mark.some else cell
-        incCell.incrementAndGet()
-        newCell
-      }
-      println(incRow.incrementAndGet())
-      newRow
-    }
-
-  }
-
-  def postMarkToBoard[F[_]: Sync](game: Game[F], position: Position): F[Game[F]] = {
-    println("post method")
-    game
-      .getBoard(b =>
-        b(position.x)(position.y) match {
-          case None =>
-            println("set value")
-            game.getTurn(t => game.updateBoard(setPositionToBoard(b, position, t)))
-        }
-      )
-      .map(_ => game)
-  }
-
   def getNextTurn(turn: Mark): Mark =
     turn match {
       case Circle => Cross
       case Cross  => Circle
     }
-
-  def addMark[F[_]: Sync](game: Game[F], position: Position): F[Game[F]] =
-    game
-      .getBoard { b =>
-        println("game")
-        if (b(position.x)(position.y).isEmpty)
-          postMarkToBoard(game, position)
-        else
-          game.pure[F]
-      }
-      .flatMap(x => x)
 }
