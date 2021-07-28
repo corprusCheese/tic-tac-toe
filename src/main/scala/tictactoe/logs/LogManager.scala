@@ -19,7 +19,7 @@ class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
 
   val connectUrl = "jdbc:postgresql://127.0.0.1:5432/tic-tac-toe"
   val user       = "postgres"
-  val password   = "lifeispeachy"
+  val password   = "???"
   val xa: Aux[F, Unit] = Transactor.fromDriverManager[F](
     "org.postgresql.Driver",                                    // driver classname
     connectUrl,                                                 // connect URL (driver-specific)

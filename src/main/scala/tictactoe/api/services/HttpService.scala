@@ -26,10 +26,11 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
 
     /** created new game and set it in map */
     case GET -> Root / "board" / "new" =>
-      val game: Game[F]               = Game[F](3)
-      val generatedId: gameMap.GameId = CustomRandom.generateGameId(gameMap)
-      gameMap.addGame(generatedId, game)
-      game.getJson(generatedId, "Game created").flatMap(json => Ok(json))
+      Game[F](3).flatMap { game =>
+        val generatedId: gameMap.GameId = CustomRandom.generateGameId(gameMap)
+        gameMap.addGame(generatedId, game)
+        game.getJson(generatedId, "Game created").flatMap(json => Ok(json))
+      }
 
     /** get current state of game in map */
     case GET -> Root / "board" / gameId =>
@@ -42,8 +43,9 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
 
     /** clear board in game */
     case GET -> Root / "board" / gameId / "clear" =>
-      val game: Game[F] = gameMap.clearGame(gameId)
-      game.getJson(gameId, "Game state cleared").flatMap(json => Ok(json))
+      gameMap
+        .clearGame(gameId)
+        .flatMap(game => game.getJson(gameId, "Game state cleared").flatMap(json => Ok(json)))
 
     /** post mark into current board */
     case req @ POST -> Root / "board" / gameId =>
@@ -54,10 +56,10 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
             gameMap.getGame(gameId) match {
               case Some(game) =>
                 println("posted")
-                Logic.addMark(game, position).flatMap(x => {
+                Logic.addMark(game, position).flatMap { x =>
                   println("posted 2")
                   game.getJson(gameId, "Mark has been posted").flatMap(json => Ok(json))
-                })
+                }
               case None =>
                 NotFound("Game is not exist")
             }

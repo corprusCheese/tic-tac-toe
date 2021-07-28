@@ -72,7 +72,7 @@ object Logic {
         b(position.x)(position.y) match {
           case None =>
             println("set value")
-            game.updateBoard(setPositionToBoard(b, position, Cross))
+            game.getTurn(t => game.updateBoard(setPositionToBoard(b, position, t)))
         }
       )
       .map(_ => game)

@@ -9,7 +9,7 @@ import cats.effect.concurrent.Ref
 import cats.implicits._
 import io.circe.syntax.EncoderOps
 
-case class Game[F[_]: Sync](dimension: Dimension) {
+case class Game[F[_]: Sync](board: Ref[F, Board], turn: Ref[F, Mark], result:Ref[F, Option[Result]], dimension: Dimension) {
   def getJson(id: String, message: String): F[Json] =
     for {
       b <- getBoard(b => DataHandler.getBoardAsMap(b).asJson)
@@ -35,29 +35,27 @@ case class Game[F[_]: Sync](dimension: Dimension) {
     )
 
   def getBoard[T](callback: Board => T): F[T] =
-    board.flatMap(_.get.map(callback))
+    board.get.map(callback)
 
   def getResult[T](callback: Option[Result] => T): F[T] =
-    result.flatMap(_.get.map(callback))
+    result.get.map(callback)
 
   def getTurn[T](callback: Mark => T): F[T] =
-    turn.flatMap(_.get.map(callback))
+    turn.get.map(callback)
 
-  def updateBoard(newBoard: Board): F[Unit] = {
-    println(newBoard)
-    board.flatMap(_.update(_ => newBoard))
-  }
+  def updateBoard(newBoard: Board): F[Unit] =
+    board.set(newBoard)
 
   def updateTurn(): F[Unit] =
-    turn.flatMap(_.update(Logic.getNextTurn))
+    turn.update(Logic.getNextTurn)
 
   def updateResult(): F[Unit] =
-    Logic.getResultFromBoard(this).map(r => result.flatMap(_.update(_ => r)))
+    Logic.getResultFromBoard(this).map(r => result.set(r))
+}
 
-  def updateAll(board: Board): F[Unit] =
-    updateBoard(board).flatMap(_ => updateTurn()).flatMap(_=> getResult(r => if (r.isEmpty) updateResult()))
-
-  val board: F[Ref[F, Board]] = Ref[F].of(initBoard())
-  val turn: F[Ref[F, Mark]] = Ref[F].of(Cross)
-  val result: F[Ref[F, Option[Result]]] = Ref[F].of(none[Result])
+object Game {
+  def apply[F[_]: Sync](dimension: Dimension): F[Game[F]] = {
+    (Ref[F].of[Board](initBoard()), Ref[F].of[Mark](Cross), Ref[F].of[Option[Result]](none[Result]))
+      .mapN((board, turn, result) => new Game(board, turn, result, dimension))
+  }
 }

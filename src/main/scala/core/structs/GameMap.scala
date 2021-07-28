@@ -25,9 +25,10 @@ class GameMap[F[_]: Sync] {
   def getGame(id: GameId): Option[Game[F]] =
     map.get(id)
 
-  def clearGame(id: GameId): Game[F] = {
-    val newGame: Game[F] = Game[F](3)
-    map.update(id, newGame)
-    newGame
+  def clearGame(id: GameId): F[Game[F]] = {
+    Game[F](3).flatMap(newGame => {
+      map.update(id, newGame)
+      newGame.pure[F]
+    })
   }
 }
