@@ -122,6 +122,9 @@
 				case "cross wins":
 					res = "Cross Wins!";
 					break;
+				case "draw":
+                    res = "Draw!";
+                    break;
 			}
 
 			showWindow(res)

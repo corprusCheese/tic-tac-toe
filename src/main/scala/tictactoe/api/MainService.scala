@@ -17,8 +17,6 @@ object MainService {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val tmr: Timer[IO]       = IO.timer(ExecutionContext.global)
 
-  val logManager: LogManager[IO] = LogManager[IO]()
-
   val api: Kleisli[IO, Request[IO], Response[IO]] = Router(
     "/" -> new HttpService[IO].getInstance(),
     "/" -> new FileService[IO].getInstance()

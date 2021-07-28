@@ -15,12 +15,15 @@ import core.DataEntities._
 import core.structs.{CustomRandom, GameMap}
 import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import tictactoe.api.MainService._
+import tictactoe.logs.LogManager
 
 class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
     extends Http4sDsl[F]
     with AbstractService[F] {
 
   val gameMap: GameMap[F] = new GameMap[F]
+  val logManager: LogManager[F] = LogManager[F]()
+
 
   private val gameService: HttpRoutes[F] = HttpRoutes.of[F] {
 
@@ -55,7 +58,6 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
           MonadThrow[F].fromEither(json.as[Position]).flatMap { position: Position =>
             gameMap.getGame(gameId) match {
               case Some(game) =>
-                println("posted")
                 game.addMark(position).flatMap { x =>
                   x.getJson(gameId, "Mark has been posted").flatMap(json => Ok(json))
                 }
@@ -69,8 +71,7 @@ class HttpService[F[_]: Monad: Timer: Concurrent: ContextShift: Sync]
     case req @ post -> Root / "board" / gameId / "save" =>
       gameMap.getGame(gameId) match {
         case Some(game) =>
-          game.getJson.map(json => logManager.insertLog(json).unsafeRunSync())
-          Ok("saved!")
+          game.getJson.flatMap(json => logManager.insertLog(json) >> Ok("saved!"))
         case _ => NotFound("error")
       }
   }
