@@ -9,8 +9,8 @@ import ws.api._
 import scala.concurrent.ExecutionContext
 
 object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = {
-    MainService.api.flatMap(api => {
+  override def run(args: List[String]): IO[ExitCode] =
+    MainService.api.flatMap { api =>
       propertiesForServer.flatMap(props =>
         BlazeServerBuilder[IO](ExecutionContext.global)
           .bindHttp(props._1, props._2)
@@ -20,6 +20,5 @@ object Main extends IOApp {
           .drain
           .as(ExitCode.Success)
       )
-    })
-  }
+    }
 }

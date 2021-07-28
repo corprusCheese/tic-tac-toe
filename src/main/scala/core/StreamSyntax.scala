@@ -4,7 +4,6 @@ import fs2.concurrent.Queue
 import fs2.{Pipe, Stream}
 import cats.implicits._
 
-
 trait StreamSyntax {
 
   implicit class StreamSyntax[F[_], A](val f: Stream[F, A]) {

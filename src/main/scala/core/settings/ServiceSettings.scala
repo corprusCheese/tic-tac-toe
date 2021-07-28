@@ -14,7 +14,7 @@ object ServiceSettings {
     maxAge = 1.day.toSeconds
   )
 
-  val propertiesForServer: IO[(Int, String)] =  {
+  val propertiesForServer: IO[(Int, String)] = {
     IO(sys.env("PORT").toInt)
       .handleErrorWith(_ => 8080.pure[IO])
       .map(port => (port, "0.0.0.0"))

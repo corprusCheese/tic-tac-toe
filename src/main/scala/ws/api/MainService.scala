@@ -24,10 +24,10 @@ object MainService {
 
     for {
       chatService <- ChatService.apply[IO]()
-      wsService <- WsService.apply[IO]()
+      wsService   <- WsService.apply[IO]()
     } yield Router(
       "/chat" -> CORS(chatService.getInstance(), ServiceSettings.methodConfig),
-      "/" -> CORS(wsService.getInstance(), ServiceSettings.methodConfig)
+      "/"     -> CORS(wsService.getInstance(), ServiceSettings.methodConfig)
     ).orNotFound
   }
 }
