@@ -4,6 +4,7 @@ import cats._
 import cats.data.NonEmptyList
 import cats.effect._
 import cats.implicits._
+import com.typesafe.config.{Config, ConfigFactory}
 import doobie._
 import doobie.implicits._
 import doobie.util.transactor.Transactor.Aux
@@ -12,32 +13,17 @@ import io.circe.parser._
 import org.postgresql.util.PGobject
 
 class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
+  val config: Config = ConfigFactory
+    .load("config/reference")
+    .getConfig("tictactoe")
 
-  val connectUrl = ""
-  val user       = ""
-  val password   = ""
   val xa: Aux[F, Unit] = Transactor.fromDriverManager[F](
     "org.postgresql.Driver",                                    // driver classname
-    connectUrl,                                                 // connect URL (driver-specific)
-    user,                                                       // user
-    password,                                                   // password
+    config.getString("dbConnectUrl"),                           // connect URL (driver-specific)
+    config.getString("dbUser"),                                 // user
+    config.getString("dbPassword"),                             // password
     Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
   )
-
-  implicit val showPGobject: Show[PGobject] = Show.show(_.getValue.take(250))
-
-  implicit val jsonGet: Get[Json] =
-    Get.Advanced.other[PGobject](NonEmptyList.of("json")).temap[Json] { o =>
-      parse(o.getValue).leftMap(_.show)
-    }
-
-  implicit val jsonPut: Put[Json] =
-    Put.Advanced.other[PGobject](NonEmptyList.of("json")).tcontramap[Json] { j =>
-      val o = new PGobject
-      o.setType("json")
-      o.setValue(j.noSpaces)
-      o
-    }
 
   implicit val jsonMeta: Meta[Json] =
     Meta.Advanced

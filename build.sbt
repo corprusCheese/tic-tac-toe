@@ -34,7 +34,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % logBackVersion % Runtime,
   "org.tpolecat" %% "doobie-core"      % doobieVersion,
   "org.tpolecat" %% "doobie-postgres"  % doobieVersion,
-  "org.tpolecat" %% "doobie-specs2"   % doobieVersion
+  "org.tpolecat" %% "doobie-specs2"   % doobieVersion,
+  "com.typesafe" % "config" % "1.4.1"
 )
 
 enablePlugins(JavaAppPackaging)
