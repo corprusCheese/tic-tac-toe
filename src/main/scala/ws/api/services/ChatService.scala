@@ -1,4 +1,4 @@
-package helloworld.api.services
+package ws.api.services
 
 import cats._
 import cats.data.Ior
@@ -6,12 +6,12 @@ import cats.effect.concurrent._
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import fs2.concurrent._
-import helloworld.api.services.ChatService._
+import ws.api.services.ChatService._
 import io.circe.parser._
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import fs2.{Stream, _}
-import helloworld.algebra.AbstractService
+import core.algebra.AbstractService
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.websocket.WebSocketBuilder
@@ -22,7 +22,8 @@ import scala.concurrent.duration.DurationInt
 import scala.language.implicitConversions
 
 class ChatService[F[_]: Monad: Timer: Concurrent](consumersListOfIors: Ref[F, IorUserList[F]])
-    extends Http4sDsl[F] with AbstractService[F] {
+    extends Http4sDsl[F]
+    with AbstractService[F] {
   private val chatService: HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "start" =>
       def targetMarkMessage(): String        = "(You):"
@@ -379,10 +380,10 @@ object ChatService {
   }
 
   implicit val encodeChatResponse: Encoder[ChatResponse] = {
-    case m: PublicMessage => encodePublicMessage(m)
+    case m: PublicMessage  => encodePublicMessage(m)
     case m: PrivateMessage => encodePrivateMessage(m)
-    case m: ErrorResponse => encodeErrorResponse(m)
-    case m: MessageToMe => encodeMessageToMe(m)
+    case m: ErrorResponse  => encodeErrorResponse(m)
+    case m: MessageToMe    => encodeMessageToMe(m)
   }
 
   implicit val encodePublicMessage: Encoder[PublicMessage] = (a: PublicMessage) =>

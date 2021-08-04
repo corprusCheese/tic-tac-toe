@@ -1,4 +1,4 @@
-package helloworld.algebra
+package core.algebra
 
 import org.http4s.HttpRoutes
 

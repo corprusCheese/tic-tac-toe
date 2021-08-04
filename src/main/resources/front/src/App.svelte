@@ -2,13 +2,14 @@
 	import axios from "axios";
 	import Swal from 'sweetalert2'
 
-	const devUrl = "https://peaceful-depths-92861.herokuapp.com/"
+	const devUrl = "" // "https://peaceful-depths-92861.herokuapp.com/"
 
-	const instance = axios.create({
+	const instance = axios.create(/*{
   		baseURL: devUrl
-	});
+	}*/);
 
 	let result = ""
+	let boardId = ""
 
 	function rowWrapper() {
 		let row = document.createElement("div")
@@ -60,7 +61,7 @@
 		return () => {
 			instance({
 				method: "post",
-				url: "/board",
+				url: "/board/"+boardId,
 				data: {
 					x: j,
 					y: i
@@ -95,11 +96,12 @@
 	}
 
 	function onReady(callback) {
-		instance.get('/board/clear').then(res => {
+		instance.get('/board/new').then(res => {
 			const boardValues = new Map(Object.entries(res.data.board))
 			getBoard(boardValues)
 			document.getElementById("reset").addEventListener("click", resetHandler())
 			result = ""
+			boardId = res.data.id
 			setTimeout(callback.call(this), 1000)
 		})
 	}
@@ -120,6 +122,9 @@
 				case "cross wins":
 					res = "Cross Wins!";
 					break;
+				case "draw":
+                    res = "Draw!";
+                    break;
 			}
 
 			showWindow(res)
@@ -140,7 +145,7 @@
 			}).then((result) => {
 				if (result.isConfirmed) {
 					console.log("confirmed")
-					instance.post("/board/save").then(result => {
+					instance.post("/board/"+boardId+"/save").then(result => {
 						if (result.code === 200)
 							console.log("success")
 					})
@@ -152,7 +157,7 @@
 
 	function resetHandler() {
 		return () => {
-			instance.get("/board/clear").then(res => {
+			instance.get("/board/"+boardId+"" + "/clear").then(res => {
 				let board = document.getElementById("board")
 				board.innerHTML = ""
 				const boardValues = new Map(Object.entries(res.data.board))

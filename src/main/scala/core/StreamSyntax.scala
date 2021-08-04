@@ -1,8 +1,8 @@
-package helloworld.api
+package core
 
-import cats.implicits._
 import fs2.concurrent.Queue
 import fs2.{Pipe, Stream}
+import cats.implicits._
 
 trait StreamSyntax {
 
