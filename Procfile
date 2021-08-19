@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/helloworld
+web: target/universal/stage/bin/tictactoe_main
