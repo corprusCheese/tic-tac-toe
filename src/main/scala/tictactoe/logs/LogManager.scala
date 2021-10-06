@@ -1,7 +1,6 @@
 package tictactoe.logs
 
 import cats._
-import cats.data.NonEmptyList
 import cats.effect._
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
@@ -13,7 +12,7 @@ import io.circe.parser._
 import org.postgresql.util.PGobject
 
 class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
-  /*val config: Config = ConfigFactory
+  val config: Config = ConfigFactory
     .load("config/reference")
     .getConfig("tictactoe")
 
@@ -23,7 +22,7 @@ class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
     config.getString("dbUser"),                                 // user
     config.getString("dbPassword"),                             // password
     Blocker.liftExecutionContext(ExecutionContexts.synchronous) // just for testing
-  )*/
+  )
 
   implicit val jsonMeta: Meta[Json] =
     Meta.Advanced
@@ -36,14 +35,13 @@ class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
       }
 
   def insertLog(jsonLog: Json): F[Unit] =
-    Monad[F].pure(())
-    /*MonadThrow[F].handleErrorWith(
+    MonadThrow[F].handleErrorWith(
       sql"""insert into game.logs(data, created) values ($jsonLog, now());""".update.run
         .transact(xa)
         .map(_ => ())
     )({ err: Throwable =>
       println(err).pure[F]
-    })*/
+    })
 }
 
 object LogManager {

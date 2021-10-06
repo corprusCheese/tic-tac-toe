@@ -38,5 +38,6 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 
 mainClass in (Compile, run) := Some("tictactoe.Main")

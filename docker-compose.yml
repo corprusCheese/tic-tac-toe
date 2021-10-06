@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  postgres_tic_tac_toe:
+    container_name: postgres_tic_tac_toe
+    restart: always
+    image: postgres:13.0-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - DEBUG=false
+      - POSTGRES_DB=game
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_URL=jdbc:postgresql://0.0.0.0:5432/blog
+    volumes:
+      - ./project/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql

@@ -4,7 +4,15 @@ import cats.{Monad, MonadThrow}
 import cats.data._
 import cats.effect._
 import cats.effect.concurrent.Ref
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxFlatMapOps, catsSyntaxOptionId, none, toFlatMapOps, toFunctorOps, toTraverseOps}
+import cats.implicits.{
+  catsSyntaxApplicativeId,
+  catsSyntaxFlatMapOps,
+  catsSyntaxOptionId,
+  none,
+  toFlatMapOps,
+  toFunctorOps,
+  toTraverseOps
+}
 import fs2.{Pipe, Stream}
 import fs2.concurrent.Queue
 import io.circe.parser.parse
@@ -17,7 +25,6 @@ import ws.api.services.ChatService.{ComplexIor, IorUserList}
 
 import scala.concurrent.duration.DurationInt
 import ws.api.model.json._
-
 
 class WsLogicHandler[F[_]: Monad: Timer: Concurrent](consumerList: Ref[F, IorUserList[F]]) {
   private def inputLeftStreamAsInit(stream: Stream[F, WebSocketFrame]): F[Unit] =

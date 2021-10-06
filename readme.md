@@ -1,23 +1,19 @@
 <h1>Tic-tac-toe</h1>
 
-запускать sbt run, тесты sbt test
+this is my first pet project in scala, my first try, so don't expect master class code here
 
-в этой ветке на текущий момент проект разделён на два приложения
+it is fullstack application with Svelte frontend and Scala backend (this is the last time i do fullstack applications - frontend and backend should be two different projects)
 
-- игра tic-tac-toe
-- чат на вебсокетах
+project has modules
 
-в heroku пока что крутится старая версия проекта, когда я не делил на несколько приложений, хочу еще сделать это все в докере, ибо там появился постгрес, который я использую для запоминания в бд игр с результатом
+- core (here lies common things like traits or custom data structures)
+- tic-tac-toe game using cats and http4s
+- websocket chat using cats and fs2
 
-https://peaceful-depths-92861.herokuapp.com - старая мастер версия
+also it has some unit test in src/test/scala directory
 
+master branch deployed to heroku, link below
 
-плюс было бы норм немного уменьшить класс ws.api.services.ChatService
+https://peaceful-depths-92861.herokuapp.com
 
-алсо для запуска в resources.config нужно создать файл reference.conf, пример такого файла:
-    
-    tictactoe {
-        dbConnectUrl: "jdbc:postgresql://127.0.0.1:5432/tic-tac-toe"
-        dbUser: "postgres"
-        dbPassword: "password"
-    }
+it should be improved some day, because code is far from ideal
