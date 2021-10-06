@@ -36,7 +36,7 @@ class LogManager[F[_]: Monad: BracketThrow: Async: ContextShift] {
 
   def insertLog(jsonLog: Json): F[Unit] =
     MonadThrow[F].handleErrorWith(
-      sql"""insert into game.logs(data, created) values ($jsonLog, now());""".update.run
+      sql"""insert into logs(data, created) values ($jsonLog, now());""".update.run
         .transact(xa)
         .map(_ => ())
     )({ err: Throwable =>
